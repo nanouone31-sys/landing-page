@@ -82,12 +82,13 @@ textarea{min-height:90px;resize:vertical}
 iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radius:24px;background:#fff;display:block;margin:0 auto}
 .spin{display:inline-block;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
-.engine{display:flex;gap:8px;margin-bottom:10px}
-.engine label{flex:1;border:1.5px solid var(--line);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:.85rem;margin:0}
+.engine{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.engine label{flex:1 1 30%;min-width:96px;border:1.5px solid var(--line);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:.82rem;margin:0}
 .engine input{display:none}
 .engine label.on{border-color:var(--green);background:#F2F7F2;color:var(--greend)}
 .small{font-size:.78rem;color:#999;text-align:center;margin-top:8px}
 #claudeKeyBox{display:none}
+#grokKeyBox{display:none}
 
 /* ===== شريط أعلى المرحلة 3 (تقدّم + إجراءات) ===== */
 .storytop{position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:5;margin-bottom:4px}
@@ -208,6 +209,7 @@ iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radi
 <div class="engine" id="engineSel">
 <label class="on" data-e="gemini"><input type="radio" name="eng" value="gemini" checked>🆓 Gemini 2.5 Flash<br><small>مجاني من AI Studio</small></label>
 <label data-e="claude"><input type="radio" name="eng" value="claude">🧠 Claude Sonnet<br><small>مفتاح مدفوع (اختياري)</small></label>
+<label data-e="grok"><input type="radio" name="eng" value="grok">🚀 Grok (xAI)<br><small>مفتاح مدفوع (اختياري)</small></label>
 </div>
 <div id="geminiKeyBox">
 <label>Gemini API Key (مجاني) *</label>
@@ -218,6 +220,13 @@ iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radi
 <label>Anthropic API Key</label>
 <input type="password" id="clkey" placeholder="sk-ant-...">
 <p class="small">من <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> — يستهلك رصيد مدفوع</p>
+</div>
+<div id="grokKeyBox">
+<label>xAI API Key (Grok) *</label>
+<input type="password" id="grokkey" placeholder="xai-...">
+<label style="margin-top:6px">اسم الموديل (اختياري)</label>
+<input type="text" id="grokmodel" placeholder="grok-4">
+<p class="small">من <a href="https://console.x.ai" target="_blank">console.x.ai</a> — يستهلك رصيد مدفوع. إذا الموديل الافتراضي رفض الطلب، جرب اسم موديل آخر متاح في حسابك (مثلاً grok-4-fast أو grok-2-vision-1212).</p>
 </div>
 </div>
 <div class="card">
@@ -438,11 +447,15 @@ ${JSON.stringify(imgs)}
 أجب فقط بـ JSON خام: {"critiqueSummary":"جملة أو جملتان بالدارجة تلخص شنو تحسّن أو تأكد","images":[{"n":1,"prompt":"البرومبت النهائي الكامل"}]}`;
 }
 
-/* ---------- المحرك المزدوج ---------- */
+/* ---------- المحرك الثلاثي: Gemini / Claude / Grok (xAI) ---------- */
 $('gmkey').value = localStorage.getItem('gm_key') || '';
 $('clkey').value = localStorage.getItem('cl_key') || '';
+$('grokkey').value = localStorage.getItem('grok_key') || '';
+$('grokmodel').value = localStorage.getItem('grok_model') || '';
 $('gmkey').addEventListener('change', e => localStorage.setItem('gm_key', e.target.value.trim()));
 $('clkey').addEventListener('change', e => localStorage.setItem('cl_key', e.target.value.trim()));
+$('grokkey').addEventListener('change', e => localStorage.setItem('grok_key', e.target.value.trim()));
+$('grokmodel').addEventListener('change', e => localStorage.setItem('grok_model', e.target.value.trim()));
 let ENGINE = localStorage.getItem('brain_engine') || 'gemini';
 function applyEngineUI(){
   document.querySelectorAll('#engineSel label').forEach(l=>{
@@ -451,6 +464,7 @@ function applyEngineUI(){
   });
   $('geminiKeyBox').style.display = ENGINE==='gemini'?'block':'none';
   $('claudeKeyBox').style.display = ENGINE==='claude'?'block':'none';
+  $('grokKeyBox').style.display = ENGINE==='grok'?'block':'none';
 }
 document.querySelectorAll('#engineSel label').forEach(l=>l.addEventListener('click',()=>{
   ENGINE=l.dataset.e; localStorage.setItem('brain_engine',ENGINE); applyEngineUI();
@@ -459,6 +473,7 @@ applyEngineUI();
 
 async function askBrain(images, text, maxTokens=4500, temp=0.7, jsonMode=true){
   if(ENGINE==='claude') return askClaudeAPI(images, text, maxTokens, temp);
+  if(ENGINE==='grok') return askGrokAPI(images, text, maxTokens, temp, jsonMode);
   return askGemini(images, text, maxTokens, temp, jsonMode);
 }
 async function askGemini(images, text, maxTokens, temp=0.7, jsonMode=true){
@@ -488,6 +503,27 @@ async function askClaudeAPI(images, text, maxTokens, temp=0.7){
   if(data.error) throw new Error(data.error.message||'خطأ من Claude');
   const t=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
   if(!t) throw new Error('رد فارغ من Claude');
+  return t;
+}
+async function askGrokAPI(images, text, maxTokens, temp=0.7, jsonMode=true){
+  const key = $('grokkey').value.trim();
+  if(!key) throw new Error('حط مفتاح xAI (Grok) ولا ارجع لمحرك Gemini المجاني');
+  const model = ($('grokmodel').value||'').trim() || 'grok-4';
+  const content = [
+    { type:'text', text },
+    ...images.map(im=>({ type:'image_url', image_url:{ url:(im.apiUrl||im.dataUrl) } }))
+  ];
+  const body = { model, messages:[{ role:'user', content }], max_tokens:maxTokens, temperature:temp };
+  if(jsonMode) body.response_format = { type:'json_object' };
+  const res = await fetch('https://api.x.ai/v1/chat/completions', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if(data.error) throw new Error((data.error.message)||(typeof data.error==='string'?data.error:'خطأ من Grok'));
+  const t = data.choices?.[0]?.message?.content;
+  if(!t) throw new Error('رد فارغ من Grok — عاود جرب');
   return t;
 }
 function parseJSON(t){

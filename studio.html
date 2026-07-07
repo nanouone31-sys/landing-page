@@ -127,6 +127,29 @@ iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radi
 .slot .info{position:absolute;top:4px;right:4px;z-index:3;background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:.72rem;display:flex;align-items:center;justify-content:center}
 .slotstatus{font-size:.82rem;font-weight:700;color:var(--greend);margin-bottom:10px;text-align:center}
 
+/* ===== فحص تناسق الحواف المحلي (بلا AI) — المرحلة 4 ===== */
+.sb-continuity{border-inline-start-color:#2C7A99;margin-top:12px}
+.controw{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:.8rem}
+.controw:last-child{border-bottom:none}
+.swatch{width:20px;height:20px;border-radius:5px;border:1px solid #ccc;flex:0 0 auto}
+.contlabel{flex:1;color:#555}
+.contstatus{font-weight:800;white-space:nowrap;font-size:.76rem}
+.controw.ok .contstatus{color:var(--greend)}
+.controw.warn .contstatus{color:var(--saffd)}
+.controw.bad .contstatus{color:#B3261E}
+
+/* ===== مؤشر القوة النفسية للصفحة (CRO Score) — المرحلة 5 ===== */
+.croScore{display:flex;align-items:center;gap:16px;margin-bottom:14px}
+.croNum{font-size:2.4rem;font-weight:900;flex:0 0 auto}
+.croNum.good{color:var(--green)}
+.croNum.mid{color:var(--saffd)}
+.croNum.low{color:#B3261E}
+.croLabel{font-size:.82rem;color:#666;line-height:1.5}
+.crolist{display:flex;flex-direction:column;gap:2px}
+.crorow{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;padding:5px 0;border-bottom:1px solid var(--line)}
+.crorow.ok{color:var(--greend)}
+.crorow.bad{color:#999}
+
 /* ===== نافذة موجزة (Brief) لكل صورة أثناء الرفع ===== */
 .modalbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200}
 .modalbg.show{display:block}
@@ -261,7 +284,7 @@ iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radi
 <div class="plan" id="planBox"></div>
 </div>
 
-<div class="note"><b>⚠️ مهم للتناسق:</b> ولّد الصور <b>بالترتيب وفي نفس المحادثة</b> في Gemini، وأرفق صورة المنتج مع كل برومبت. الحواف والنصوص محسوبين باش يتراصو بلا تشوه.</div>
+<div class="note"><b>⚠️ مهم للتناسق:</b> ولّد الصور <b>بالترتيب وفي نفس المحادثة</b> في Gemini، وأرفق صورة المنتج مع كل برومبت. الحواف والنصوص محسوبين باش يتراصو بلا تشوه.<br><b>✅ مضمون تلقائياً:</b> كل برومبت يتضمن قيود واقعية إجبارية (Hyper-realistic, ممنوع CGI/3D) ولقطة Macro واحدة على الأقل تثبت جودة المواد.</div>
 
 <div class="sectionblock sb-timeline">
 <h2>🎬 السلسلة البصرية — بالترتيب النفسي</h2>
@@ -283,6 +306,7 @@ iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radi
 <div class="slotstatus" id="slotStatus"></div>
 <div class="slotgrid" id="slotGrid"></div>
 <p class="sbhint">💡 صورة مرفوعة؟ اسحبها وحطها في فتحة أخرى إذا بغيت تبدّل الترتيب. اضغط ℹ️ لمراجعة تفاصيل أي صورة بلا رجوع للخلف.</p>
+<div id="continuityWrap"></div>
 <div class="hint">🎬 المخرج راح يفحص <b>تناسق الألوان والحواف</b> بين كل صورتين متتاليتين، يستبعد أي صورة مشوهة ولا بنص غالط، يرتب التراص، ويكتب الكوبي بالدارجة الجزائرية.</div>
 </div>
 <div class="card">
@@ -295,6 +319,7 @@ iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radi
 <!-- ================= المرحلة 5 ================= -->
 <div id="step5" style="display:none">
 <div class="plan" id="checkBox"></div>
+<div class="card" id="croCard"></div>
 <div class="card">
 <h2>✅ الصفحة جاهزة (معاينة موبايل)</h2>
 <div class="row2" style="margin-bottom:10px">
@@ -348,6 +373,17 @@ function showErr(m){ const e=$('err'); e.textContent='⚠️ '+m; e.style.displa
 function clearErr(){ $('err').style.display='none'; }
 function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- ضمان الواقعية + لقطة Macro إجبارية (تنفيذ صارم بلا اعتماد كلي على امتثال الذكاء) ---------- */
+const REALISM_SUFFIX = "Hyper-realistic photography, raw unedited authentic look, natural harsh lighting, shot on smartphone or DSLR camera, absolutely NO CGI, NO 3D render, NO plastic AI-generated look — visible authentic textures, real imperfections, real shadows.";
+function enforceRealism(prompt){
+  if(!prompt) return prompt;
+  if(/hyper-realistic/i.test(prompt) && /no cgi/i.test(prompt)) return prompt;
+  return prompt.trim() + ' ' + REALISM_SUFFIX;
+}
+function hasMacroShot(images){
+  return (images||[]).some(pi => /macro|close.?up|closeup|تفصيل|قريب/i.test(((pi.composition||'')+' '+(pi.purpose||'')+' '+(pi.scene||''))));
+}
 
 /* ---------- المحرك المزدوج ---------- */
 $('gmkey').value = localStorage.getItem('gm_key') || '';
@@ -474,6 +510,57 @@ function addTagFromInput(key){
 function removeTag(key,i){ state.tags[key].splice(i,1); renderTagBox(key); }
 ['hooks','sellingPoints','painPoints'].forEach(renderTagBox);
 
+/* ---------- فحص تناسق الحواف محلياً — بلا AI، فوري عند الرفع (المرحلة 4) ---------- */
+function hexToRgb(hex){
+  if(!hex) return null;
+  const m=(''+hex).replace('#','').trim();
+  if(!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(m)) return null;
+  const full = m.length===3 ? m.split('').map(c=>c+c).join('') : m;
+  const n = parseInt(full,16);
+  return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+}
+function colorDistance(a,b){
+  if(!a||!b) return Infinity;
+  return Math.sqrt(Math.pow(a.r-b.r,2)+Math.pow(a.g-b.g,2)+Math.pow(a.b-b.b,2));
+}
+function sampleEdgeColors(dataUrl){
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>{
+      try{
+        const w=Math.min(img.width,120), scale=w/img.width, h=Math.max(1,Math.round(img.height*scale));
+        const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+        const ctx=cv.getContext('2d'); ctx.drawImage(img,0,0,w,h);
+        const stripH=Math.max(1,Math.round(h*0.06));
+        const avg=(data)=>{ let r=0,g=0,b=0,n=0; for(let i=0;i<data.length;i+=4){ r+=data[i]; g+=data[i+1]; b+=data[i+2]; n++; } return n? {r:Math.round(r/n),g:Math.round(g/n),b:Math.round(b/n)} : null; };
+        const top = avg(ctx.getImageData(0,0,w,stripH).data);
+        const bottom = avg(ctx.getImageData(0,h-stripH,w,stripH).data);
+        res({top,bottom});
+      }catch(e){ res({top:null,bottom:null}); }
+    };
+    img.onerror=()=>res({top:null,bottom:null});
+    img.src=dataUrl;
+  });
+}
+function renderContinuity(){
+  const wrap=$('continuityWrap'); if(!wrap) return;
+  const total=(state.plan&&state.plan.images||[]).length;
+  let rows='';
+  for(let i=0;i<total-1;i++){
+    const a=state.slots[i], b=state.slots[i+1];
+    if(!a || !b || !a.edges || !b.edges || !a.edges.bottom || !b.edges.top) continue;
+    const d = colorDistance(a.edges.bottom, b.edges.top);
+    const status = d<25 ? {icon:'✅',label:'تطابق ممتاز',cls:'ok'} : d<60 ? {icon:'⚠️',label:'فرق بسيط',cls:'warn'} : {icon:'❌',label:'تعارض واضح',cls:'bad'};
+    rows += `<div class="controw ${status.cls}">
+      <span class="swatch" style="background:rgb(${a.edges.bottom.r},${a.edges.bottom.g},${a.edges.bottom.b})" title="أسفل صورة ${i+1}"></span>
+      <span class="contlabel">صورة ${i+1} ← صورة ${i+2}</span>
+      <span class="swatch" style="background:rgb(${b.edges.top.r},${b.edges.top.g},${b.edges.top.b})" title="أعلى صورة ${i+2}"></span>
+      <span class="contstatus">${status.icon} ${status.label}</span>
+    </div>`;
+  }
+  wrap.innerHTML = rows ? `<div class="sectionblock sb-continuity"><h2>🔗 فحص تناسق الحواف (محلي وفوري)</h2>${rows}</div>` : '';
+}
+
 /* ---------- فتحات السلسلة المرقمة — المرحلة 4 ---------- */
 let dragFromIdx=null;
 function dragSlot(e,i){ dragFromIdx=i; e.dataTransfer.effectAllowed='move'; }
@@ -500,6 +587,7 @@ function renderSlots(){
   $('slotStatus').textContent = `${up} من ${total} صورة مرفوعة` + (up===total?' ✅ السلسلة كاملة':'');
   $('slotProgressFill').style.width = (total?Math.round(up/total*100):0)+'%';
   $('btnBuild').classList.toggle('ready', up===total && total>0);
+  renderContinuity();
 }
 function pickSlot(input, idx){
   const f=input.files[0]; input.value='';
@@ -507,7 +595,8 @@ function pickSlot(input, idx){
   const r=new FileReader();
   r.onload=async ()=>{
     const apiUrl=await shrinkImage(r.result);
-    state.slots[idx]={ dataUrl:r.result, apiUrl };
+    const edges=await sampleEdgeColors(r.result);
+    state.slots[idx]={ dataUrl:r.result, apiUrl, edges };
     renderSlots();
     toast('صورة '+(idx+1)+' ترفعت ✅');
   };
@@ -546,6 +635,7 @@ function resetAll(){
   state = { step:1, productImages:[], slots:[], specs:null, plan:null, blueprint:null, finalHTML:"", tags:{hooks:[],sellingPoints:[],painPoints:[]} };
   ['descIn','priceIn','oldPriceIn','offerIn','specName','specDesc','specAud','specUsp','pixelIn'].forEach(id=>$(id).value='');
   $('specRows').innerHTML=''; $('prodThumbs').innerHTML=''; $('promptCards').innerHTML='';
+  $('continuityWrap').innerHTML=''; $('croCard').innerHTML='';
   ['hooks','sellingPoints','painPoints'].forEach(renderTagBox);
   goStep(1); toast('مشروع جديد 🆕');
 }
@@ -630,15 +720,18 @@ ${DARIJA_RULE}
 
 2.5) الانضباط النفسي (Miller's Law + Von Restorff): كل صورة تحمل حد أقصى عنصر جرافيكي مسيطر واحد (شارة، سهم، أو رقم كبير) — ممنوع تحميلها بعدة عناصر متزاحمة تشتت العين. اجعل في كل صورة عنصر واحد بارز يخطف النظر أولاً قبل أي شيء آخر.
 
-3) السلسلة — القاعدة الذهبية المطلقة: كل صورة تصميم إعلاني كامل مبني من الصفر. المنتج يُستخرج من الصورة المرفقة ويُعاد وضعه في مشهد جديد بالكامل: خلفية مصممة، بيئة، إضاءة سينمائية، عناصر جرافيكية (شارات، أسهم، price burst، callouts). "صورة المنتج الخام + نص فوقها" = عمل مرفوض يُلغى فوراً.
-نوّع التكوينات إجبارياً (ممنوع تكرار تكوين في صورتين): Hero Shot سينمائي / مشهد استعمال جزائري واقعي / Macro لتفصيلة تثبت الجودة / Split مشكل-حل أو قبل-بعد / Flat-lay علوي للعرض والملحقات / لوحة إثبات بأرقام كبيرة — أو ابتكر تكوينات أقوى.
+2.6) الواقعية الإجبارية (Anti-CGI): الزبون الجزائري يرفض فوراً أي صورة "تبان مصنوعة بالذكاء الاصطناعي" أو "بلاستيكية". كل برومبت — بلا استثناء — يجب أن يفرض: تصوير واقعي خام (raw unedited look)، إضاءة طبيعية قاسية (not studio-perfect)، ملمس حقيقي واضح (خدوش معدن حقيقية، غبار، نسيج قماش، لمعان بلاستيك حقيقي)، وممنوع منعاً باتاً أي مظهر CGI/3D render/AI-plastic-look. هذا شرط غير تفاوضي في كل صورة.
+
+3) السلسلة — القاعدة الذهبية المطلقة: كل صورة تصميم إعلاني كامل مبني من الصفر. المنتج يُستخرج من الصورة المرفقة ويُعاد وضعه في مشهد جديد بالكامل: خلفية مصممة، بيئة، إضاءة سينمائية واقعية (ماشي رندر)، عناصر جرافيكية (شارات، أسهم، price burst، callouts). "صورة المنتج الخام + نص فوقها" = عمل مرفوض يُلغى فوراً.
+نوّع التكوينات إجبارياً (ممنوع تكرار تكوين في صورتين): Hero Shot سينمائي / مشهد استعمال جزائري واقعي / Split مشكل-حل أو قبل-بعد / Flat-lay علوي للعرض والملحقات / لوحة إثبات بأرقام كبيرة — أو ابتكر تكوينات أقوى.
+⚠️ إلزامي غير قابل للتفاوض: صورة واحدة على الأقل من السلسلة يجب أن تكون بتكوين Macro/Close-up تفصيلي فائق القرب يبرز ملمس وجودة المواد الحقيقية (سمك المعدن، دقة الخياطة، نعومة السطح، متانة المفصلات) — هذه الصورة تقتل اعتراض "المنتج رخيص/مقلّد" بصرياً بلا كلام.
 
 لكل صورة اكتب بوضوح: الغرض، الزناد النفسي، التكوين، وصف المشهد بالدارجة، النص العربي المدموج (قصير ضارب بالدارجة)، حافة الأعلى hex، حافة الأسفل hex (تطابق أعلى الصورة الموالية)، ثم البرومبت الإنجليزي الكامل (80-150 كلمة).
 
-هذا مثال للمستوى المطلوب في البرومبت (لمنتج افتراضي — لا تنسخه، تعلّم منه العمق السينمائي):
-"Using the attached product photo ONLY as the exact product reference (its design, colors and proportions must stay identical), design a completely new professional advertising composition: dramatic low-angle hero shot of the pressure washer standing on wet dark concrete in a moody Algerian garage at dusk, cinematic teal-orange grading, a frozen water jet with backlit crystal droplets, faint steam, shallow depth of field. Diagonal dynamic composition, rim light tracing the copper motor. Golden badge top-right reading '140 BAR', thin saffron callout arrows pointing to the motor and metal lance. Integrate this exact Arabic text as a bold graphic design element in modern Arabic typography (Cairo-style), perfectly legible, right-to-left: 'قوة تغسل كلش'. The background at the very top edge must be exactly #0B1D26 and at the very bottom edge exactly #123240. STRICT RULES: vertical 4:5, photorealistic product, full advertising design, no product deformation, no watermark, Arabic text spelled exactly as given."
+هذا مثال للمستوى المطلوب في البرومبت (لمنتج افتراضي — لا تنسخه، تعلّم منه العمق السينمائي وقيود الواقعية):
+"Using the attached product photo ONLY as the exact product reference (its design, colors and proportions must stay identical), design a completely new professional advertising composition: dramatic low-angle hero shot of the pressure washer standing on wet dark concrete in a moody Algerian garage at dusk, natural harsh directional lighting, a frozen water jet with backlit crystal droplets, faint steam, shallow depth of field. Diagonal dynamic composition, rim light tracing the copper motor. Golden badge top-right reading '140 BAR', thin saffron callout arrows pointing to the motor and metal lance. Integrate this exact Arabic text as a bold graphic design element in modern Arabic typography (Cairo-style), perfectly legible, right-to-left: 'قوة تغسل كلش'. The background at the very top edge must be exactly #0B1D26 and at the very bottom edge exactly #123240. Hyper-realistic photography, raw unedited authentic look, shot on DSLR, visible real metal scratches and water droplets, absolutely NO CGI, NO 3D render, NO plastic AI-generated look. STRICT RULES: vertical 4:5, photorealistic product, full advertising design, no product deformation, no watermark, Arabic text spelled exactly as given."
 
-كل برومبت يبدأ بنفس الافتتاحية، يدمج النص العربي بنفس الصيغة، يحدد حافتي hex، وينتهي بنفس STRICT RULES.`;
+كل برومبت يبدأ بنفس الافتتاحية، يدمج النص العربي بنفس الصيغة، يحدد حافتي hex، يتضمن جملة الواقعية الإجبارية (Hyper-realistic, no CGI, no 3D render, no AI-plastic-look) حرفياً، وينتهي بنفس STRICT RULES.`;
 
     const mkStruct = d =>
 `حوّل تقرير المخرج الفني التالي إلى JSON خام بالمخطط أدناه، بلا أي نص خارج JSON. انسخ كل برومبت حرفياً كاملاً كما هو، بلا اختصار ولا إعادة صياغة.
@@ -663,6 +756,14 @@ ${d}
       state.plan = await askJSON([], mkStruct(draft), 7000, 0.2);
     }
     if(!Array.isArray(state.plan.images) || !state.plan.images.length) throw new Error('المخرج ما رجعش سلسلة صالحة — عاود اضغط الزر');
+    if(!hasMacroShot(state.plan.images)){
+      toast('السلسلة ناقصة لقطة Macro تثبت الجودة — نطلب من المخرج يزيدها');
+      draft = await askBrain(state.productImages.slice(0,3),
+        CREATIVE + '\n\n⚠️ تنبيه صارم: السلسلة السابقة ما فيهاش صورة Macro/Close-up تفصيلية تبرز جودة المواد (سمك المعدن، نعومة السطح، دقة التصنيع). أعد التصميم وأضف صورة واحدة على الأقل بتكوين macro/close-up واضح — هذا شرط إلزامي.', 8000, 1.0, false);
+      const retried = await askJSON([], mkStruct(draft), 7000, 0.2);
+      if(Array.isArray(retried.images) && retried.images.length) state.plan = retried;
+    }
+    (state.plan.images||[]).forEach(pi => { pi.prompt = enforceRealism(pi.prompt); });
     state.slots = new Array((state.plan.images||[]).length).fill(null);
     renderPlan();
     goStep(3); toast('السلسلة جاهزة 🎬 '+state.plan.imageCount+' صور');
@@ -747,7 +848,12 @@ ${DARIJA_RULE}
 4) لوحة ألوان نفسية مستخرجة من صور المنتج: accentColor (يسيطر على CTA — Von Restorff، ويجب أن تكون نسبة تباينه مع خلفية شريط الطلب لا تقل عن 4.5:1 حتى تبقى العين تتوقف عنده بلا مجهود)، primaryColor (داكن للعناوين)، bgColor (خلفية الصفحة). وخطان من هذه القائمة فقط: Cairo, Tajawal, Almarai, Changa, El Messiri, Reem Kufi, Noto Kufi Arabic, Amiri, Lalezar — fontDisplay للعناوين وfontBody للنصوص، الاختيار نفسي (سلطة؟ دفء؟ حداثة؟).
 5) اكتب customCSS إبداعي كامل يطبق مفهومك: خلفيات طبقية، تدرجات ذكية، ظلال حديثة، فواصل أنيقة، بطاقات premium، micro-interactions بـCSS فقط (hover، transitions)، glassmorphism عند اللزوم، هرمية typography، whitespace كعنصر تصميم. تقدر تعيد تصميم: section، h2، .review، details/summary، .trust3، .urgency، .price-new، .cta (ألوان/ظلال/حواف/تدرجات)، footer، وتزيد classes جديدة لأقسامك. قواعد صارمة: بلا @import، بلا url() خارجي، بلا position:fixed، بلا display:none لعناصر موجودة، لا تلمس آلية عمل .sheet و.ctabar و.stack img (جمّلهم فقط).
 6) ثلاثة أقسام HTML semantic نظيفة بالدارجة (بلا script، بلا صور أو روابط خارجية، أيقونات inline SVG فقط): aboveImages = شريط hook قصير فوق الصور يوقف السكرول (اختياري — أرجعه "" إذا الصور كافية بذاتها)، belowImages = القسم الإبداعي الرئيسي بعد شريط الثقة (فوائد بأيقونات، أرقام، مقارنة قبل/بعد — إبداعك)، preFooter = قسم طمأنة/ضمان أخير قبل الفوتر (Peak-End Rule).
-7) الكوبي: cta قصير ضارب، urgency واقعي غير مبتذل، 3 testimonials بتفاصيل ملموسة تبني الثقة، 4 faq تذيب الاعتراضات (توصيل، دفع عند الاستلام، ضمان).
+7) الكوبي وآلية الإلحاح التكيّفية: cta قصير ضارب، 3 testimonials بتفاصيل ملموسة تبني الثقة، 4 faq تذيب الاعتراضات (توصيل، دفع عند الاستلام، ضمان).
+اختر آلية إلحاح واحدة (urgencyType) الأنسب نفسياً لهذا المنتج بالذات وماشي نفس الآلية دائماً:
+- "countdown": للعروض الحساسة للوقت (خصم مؤقت، مناسبة) — أرجع urgencyHours (عدد الساعات، 3 إلى 12).
+- "stock": للمنتجات اللي منطقياً كميتها محدودة (دفعة محدودة، موسمي) — أرجع urgencyStock (رقم واقعي بين 4 و15).
+- "trust": للمنتجات اللي تعتمد الثقة والجودة المستمرة (أدوات مهنية، منتجات صحية) حيث الإلحاح المصطنع يضر بالمصداقية — بلا عداد ولا رقم، رسالة طمأنة بدل الضغط.
+أرجع أيضاً urgencyText مناسب للنوع المختار بالدارجة.
 
 أجب فقط بـ JSON خام:
 {"imageOrder":[0,1],"designName":"English name","designRationale":"بالدارجة",
@@ -755,14 +861,55 @@ ${DARIJA_RULE}
 "customCSS":"css كامل بلا وسوم style",
 "sections":{"aboveImages":"<section>...</section> أو نص فارغ","belowImages":"<section>...</section>","preFooter":"<section>...</section>"},
 "continuityCheck":"جملتان بالدارجة: تقييم التراص + المستبعد وعلاش","strategy":"جملتان بالدارجة: منطق الترتيب",
-"copy":{"cta":"","urgency":"","testimonials":[{"name":"اسم جزائري","wilaya":"ولاية","text":"بالدارجة بتفصيل ملموس"}],"faq":[{"q":"بالدارجة","a":"بالدارجة"}]}}
+"copy":{"cta":"","urgencyType":"countdown أو stock أو trust","urgencyText":"","urgencyHours":6,"urgencyStock":7,"testimonials":[{"name":"اسم جزائري","wilaya":"ولاية","text":"بالدارجة بتفصيل ملموس"}],"faq":[{"q":"بالدارجة","a":"بالدارجة"}]}}
 القواعد: testimonials بالضبط 3، faq بالضبط 4، customCSS نص JSON واحد مهرّب بشكل سليم، لا تعليقات ولا أقواس خارج بنية JSON.`, 8000, 0.9);
     state.finalHTML = buildLandingHTML(sp, state.blueprint, useImgs, $('pixelIn').value.trim());
     $('checkBox').innerHTML = `<b>🎨 المفهوم:</b> ${state.blueprint.designName||''} — ${state.blueprint.designRationale||''}<br><b>🧠 فحص التراص:</b> ${state.blueprint.continuityCheck||''}<br><b>📐 الاستراتيجية:</b> ${state.blueprint.strategy||''}`;
     $('preview').srcdoc = state.finalHTML;
+    renderCROScore();
     goStep(5); toast('الصفحة جاهزة ✅');
   }catch(e){ showErr('فشل الإخراج: '+e.message); }
   btn.disabled=false; btn.textContent='🎬 افحص التناسق وابنِ الصفحة';
+}
+
+/* ---------- مؤشر القوة النفسية للصفحة — heuristic تقديري، بلا استدعاء API (المرحلة 5) ---------- */
+function relLuminance(rgb){
+  if(!rgb) return 0;
+  const srgb=[rgb.r,rgb.g,rgb.b].map(v=>{ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); });
+  return 0.2126*srgb[0]+0.7152*srgb[1]+0.0722*srgb[2];
+}
+function contrastRatio(hexA, hexB){
+  const a=hexToRgb(hexA), b=hexToRgb(hexB);
+  if(!a||!b) return 0;
+  const l1=relLuminance(a)+0.05, l2=relLuminance(b)+0.05;
+  return l1>l2 ? l1/l2 : l2/l1;
+}
+function computeCROScore(){
+  const sp=state.specs||{}, pl=state.plan||{}, bp=state.blueprint||{}, cp=bp.copy||{};
+  const breakdown=[]; let score=0;
+  function add(pts,label,ok){ if(ok) score+=pts; breakdown.push({label,pts:ok?pts:0,max:pts,ok:!!ok}); }
+  add(10,'شهادات عملاء بتفاصيل ملموسة (3)', (cp.testimonials||[]).length>=3);
+  add(10,'أسئلة شائعة تذيب الاعتراضات (4)', (cp.faq||[]).length>=4);
+  add(10,'USP واضحة ومحددة', !!(sp.usp&&sp.usp.trim()));
+  add(10,'نقاط بيع نفسية كافية (5)', (sp.sellingPoints||[]).length>=5);
+  add(10,'معالجة آلام الزبون (3)', (sp.painPoints||[]).length>=3);
+  add(5,'هوكات توقف السكرول (3)', (sp.hooks||[]).length>=3);
+  add(10,'الإرساء السعري (سعر قديم مشطوب)', !!sp.oldPrice);
+  add(10,'آلية إلحاح مختارة بوعي', !!(cp.urgencyText&&cp.urgencyText.trim()));
+  add(15,'عدد الصور ضمن قانون ميلر (3-5)', (pl.images||[]).length>=3 && (pl.images||[]).length<=5);
+  add(10,'تباين لون الـCTA واضح للعين', bp.accentColor ? contrastRatio(bp.accentColor,'#FFFFFF')>=4.5 : false);
+  return { score, breakdown };
+}
+function renderCROScore(){
+  const card=$('croCard'); if(!card) return;
+  const { score, breakdown } = computeCROScore();
+  const cls = score>=85?'good':(score>=65?'mid':'low');
+  const label = score>=85?'ممتازة — الصفحة مجهزة نفسياً بقوة'
+              : score>=65?'جيدة — فيها هوامش تحسين'
+              : 'تحتاج تحسين قبل الإطلاق';
+  card.innerHTML = `<h2>📊 مؤشر القوة النفسية للصفحة</h2>
+<div class="croScore"><div class="croNum ${cls}">${score}</div><div class="croLabel"><b>${label}</b><br>مؤشر استدلالي (heuristic) مبني على أفضل ممارسات CRO المعروفة — ماشي بديل عن اختبار A/B حقيقي على زبائن فعليين.</div></div>
+<div class="crolist">${breakdown.map(b=>`<div class="crorow ${b.ok?'ok':'bad'}"><span>${b.ok?'✅':'❌'} ${b.label}</span><span>${b.pts}/${b.max}</span></div>`).join('')}</div>`;
 }
 
 function downloadPage(){
@@ -818,6 +965,27 @@ function buildLandingHTML(specs, bp, allImages, pixelId){
   const wilayaOptions = WILAYAS.map(w=>`<option value="${w}">${w}</option>`).join('');
   const reviews = (c.testimonials||[]).map(t=>`<div class="review"><div class="stars">★★★★★</div><p>"${t.text}"</p><span>— ${t.name}، ${t.wilaya} <b class="v">✓ طلب مؤكد</b></span></div>`).join('');
   const faqItems = (c.faq||[]).map(f=>`<details><summary>${f.q}</summary><p>${f.a}</p></details>`).join('');
+  const urgKey = 'ct_'+(specs.name||'p').replace(/[^a-zA-Z0-9]/g,'').slice(0,24);
+  const urgType = ['countdown','stock','trust'].includes(c.urgencyType) ? c.urgencyType : 'stock';
+  const urgHours = Math.min(24,Math.max(1, parseInt(c.urgencyHours,10)||6));
+  const urgStock = Math.min(30,Math.max(1, parseInt(c.urgencyStock,10)||7));
+  let urgencyHTML, urgencyScript='';
+  if(urgType==='countdown'){
+    urgencyHTML = `<div class="urgency urgency-countdown">${c.urgencyText||'🔥 العرض ينتهي خلال'} <span class="ctdown"><span id="ct-h">00</span>:<span id="ct-m">00</span>:<span id="ct-s">00</span></span></div>`;
+    urgencyScript = `
+function ctPad(n){return n<10?'0'+n:''+n;}
+function ctGetDeadline(){var saved=localStorage.getItem('${urgKey}');var now=Date.now();if(saved&&parseInt(saved,10)>now)return parseInt(saved,10);var d=now+1000*60*60*${urgHours};localStorage.setItem('${urgKey}',d);return d;}
+var ctDeadline=ctGetDeadline();
+function ctTick(){var diff=ctDeadline-Date.now();if(diff<=0){localStorage.removeItem('${urgKey}');ctDeadline=ctGetDeadline();diff=ctDeadline-Date.now();}
+var h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+var eh=document.getElementById('ct-h'),em=document.getElementById('ct-m'),es=document.getElementById('ct-s');
+if(eh){eh.textContent=ctPad(h);em.textContent=ctPad(m);es.textContent=ctPad(s);}}
+ctTick(); setInterval(ctTick,1000);`;
+  } else if(urgType==='stock'){
+    urgencyHTML = `<div class="urgency urgency-stock">${c.urgencyText||('🔥 باقي '+urgStock+' قطعة بالضبط بهذا السعر')}</div>`;
+  } else {
+    urgencyHTML = `<div class="urgency urgency-trust">${c.urgencyText||'✅ منتج مضمون الجودة — اطلب بكل ثقة'}</div>`;
+  }
   const px = pixelId ? `
 <scr`+`ipt>
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
@@ -872,6 +1040,8 @@ body.open .sheet-bg{opacity:1;pointer-events:auto}
 .grip{width:44px;height:5px;background:#ddd;border-radius:3px;margin:0 auto 12px}
 .sheet h2{text-align:center}
 .urgency{text-align:center;background:#FFF3E0;color:#C77F1B;font-weight:700;padding:8px;border-radius:10px;margin:10px 0;font-size:.9rem}
+.urgency-trust{background:#EAF6EF;color:#0A4A37}
+.urgency-countdown .ctdown{direction:ltr;display:inline-flex;gap:4px;margin-inline-start:6px;font-variant-numeric:tabular-nums;font-weight:900}
 label{display:block;font-weight:700;margin:10px 0 4px;font-size:.92rem}
 input,select{width:100%;padding:13px;border:1.5px solid #ccc;border-radius:10px;font-size:1rem;background:#fff;color:#222;font-family:'${fB}'}
 input:focus,select:focus{border-color:var(--accent);outline:none}
@@ -916,7 +1086,7 @@ ${secPre}
 <div class="sheet">
 <div class="grip"></div>
 <h2>📦 عمّر الطلبية</h2>
-<div class="urgency">${c.urgency||'🔥 الكمية محدودة'}</div>
+${urgencyHTML}
 <form onsubmit="return submitOrder(event)">
 <label>الاسم الكامل *</label><input name="name" required placeholder="اكتب اسمك">
 <label>رقم الهاتف *</label><input name="phone" type="tel" required placeholder="05 / 06 / 07 ..." pattern="0[5-7][0-9]{8}">
@@ -929,6 +1099,7 @@ ${secPre}
 </form>
 </div>
 <scr`+`ipt>
+${urgencyScript}
 function openSheet(){document.body.classList.add('open');${pixelId?"fbq('track','InitiateCheckout');":''}}
 function closeSheet(){document.body.classList.remove('open')}
 function submitOrder(e){e.preventDefault();${pixelId?`fbq('track','Lead',{content_name:'${specs.name}',value:${specs.price||0},currency:'DZD'});`:''}

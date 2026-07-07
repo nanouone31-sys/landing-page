@@ -488,13 +488,13 @@ function renderSlots(){
   if(!state.plan?.images?.length){ grid.innerHTML='<p style="color:#999">صمم السلسلة أولاً</p>'; $('slotStatus').textContent=''; $('slotProgressFill').style.width='0%'; return; }
   grid.innerHTML = state.plan.images.map((pi,i)=>{
     const img = state.slots[i];
-    return `<label class="slot${img?' filled':''}" ${img?`draggable="true" ondragstart="dragSlot(event,${i})"`:''} ondragover="event.preventDefault()" ondrop="dropSlot(event,${i})">
-      ${img?`<img src="${img.dataUrl}"><button type="button" class="rm" onclick="event.preventDefault();removeSlot(${i})">✕</button>`:''}
-      <button type="button" class="info" onclick="event.preventDefault();showBrief(${i})">ℹ️</button>
+    return `<div class="slot${img?' filled':''}" onclick="triggerSlotUpload(${i})" ${img?`draggable="true" ondragstart="dragSlot(event,${i})"`:''} ondragover="event.preventDefault()" ondrop="dropSlot(event,${i})">
+      ${img?`<img src="${img.dataUrl}"><button type="button" class="rm" onclick="event.stopPropagation();removeSlot(${i})">✕</button>`:''}
+      <button type="button" class="info" onclick="event.stopPropagation();showBrief(${i})">ℹ️</button>
       <div class="slabel">${img?'':'📷 '}صورة ${pi.n}: ${pi.purpose}</div>
       ${img?'':'<div style="font-size:.65rem;color:#999;position:relative;z-index:2">اضغط للرفع</div>'}
-      <input type="file" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="pickSlot(this,${i})">
-    </label>`;
+      <input type="file" id="slotfile_${i}" accept="image/png,image/jpeg,image/webp" style="display:none" onclick="event.stopPropagation()" onchange="pickSlot(this,${i})">
+    </div>`;
   }).join('');
   const total=state.plan.images.length, up=state.slots.filter(Boolean).length;
   $('slotStatus').textContent = `${up} من ${total} صورة مرفوعة` + (up===total?' ✅ السلسلة كاملة':'');
@@ -514,6 +514,7 @@ function pickSlot(input, idx){
   r.readAsDataURL(f);
 }
 function removeSlot(i){ state.slots[i]=null; renderSlots(); }
+function triggerSlotUpload(i){ const inp=$('slotfile_'+i); if(inp) inp.click(); }
 function showBrief(i){
   const pi=state.plan?.images?.[i]; if(!pi) return;
   $('briefModalBody').innerHTML = `<h2 style="margin-bottom:10px">صورة ${pi.n} — ${pi.purpose}</h2>

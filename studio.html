@@ -157,6 +157,28 @@ iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radi
 .modal.show{display:block}
 .modal h2{font-size:1rem;color:var(--greend)}
 .modalclose{position:absolute;top:8px;left:8px;background:none;border:none;font-size:1.1rem;cursor:pointer;color:#999}
+
+/* ===== وضع التفكير العميق (نقد ذاتي إضافي) ===== */
+.deepmode-toggle{display:flex;align-items:center;gap:8px;font-weight:700;font-size:.8rem;color:var(--greend);background:#F2F7F2;border:1px solid var(--green);border-radius:10px;padding:10px 12px;margin-bottom:12px;cursor:pointer}
+.deepmode-toggle input{width:auto;margin:0;flex:0 0 auto}
+.critique{background:#FBF7FF;border:1.5px solid #6B4FA1;border-radius:12px;padding:10px 12px;margin-bottom:12px;font-size:.82rem;color:#3d3355}
+.critique b{color:#4A3575}
+
+/* ===== رفيق الدردشة الحي مع المخرج ===== */
+.chatFab{position:fixed;bottom:16px;left:16px;z-index:150;width:52px;height:52px;border-radius:50%;background:var(--greend);color:#fff;border:none;font-size:1.4rem;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.3)}
+.chatPanel{display:none;flex-direction:column;position:fixed;bottom:16px;left:16px;width:340px;max-width:92vw;height:460px;max-height:75vh;background:#fff;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.3);z-index:151;overflow:hidden}
+.chatPanel.show{display:flex}
+.chatHead{background:var(--greend);color:#fff;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;flex:0 0 auto}
+.chatClose{background:none;border:none;color:#fff;font-size:1rem;cursor:pointer}
+.chatMsgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:#FAF8F1}
+.chatMsg{max-width:82%;padding:8px 12px;border-radius:14px;font-size:.82rem;line-height:1.5;white-space:pre-wrap}
+.chatMsg.user{align-self:flex-end;background:var(--green);color:#fff;border-bottom-left-radius:4px}
+.chatMsg.dir{align-self:flex-start;background:#fff;border:1px solid var(--line);border-bottom-right-radius:4px}
+.chatQuick{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 8px;flex:0 0 auto}
+.chatQuick button{background:#EEF6F2;border:1px solid var(--green);color:var(--greend);border-radius:20px;padding:4px 10px;font-size:.7rem;cursor:pointer}
+.chatInputRow{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line);flex:0 0 auto}
+.chatInputRow input{flex:1;margin:0}
+.chatTyping{font-size:.75rem;color:#999;padding:2px 4px}
 </style>
 </head>
 <body>
@@ -265,6 +287,11 @@ iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radi
 </div>
 </div>
 
+<label class="deepmode-toggle" for="deepModeChk">
+<input type="checkbox" id="deepModeChk">
+🧠 وضع التفكير العميق — المخرج يراجع نفسه بعين ناقدة قبل التسليم (استدعاء إضافي، وقت أطول، جودة أعلى)
+</label>
+
 <button class="btn" id="btnPlan" onclick="genPlan()">🎬 صمم السلسلة البصرية ←</button>
 </div>
 
@@ -285,6 +312,8 @@ iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radi
 </div>
 
 <div class="note"><b>⚠️ مهم للتناسق:</b> ولّد الصور <b>بالترتيب وفي نفس المحادثة</b> في Gemini، وأرفق صورة المنتج مع كل برومبت. الحواف والنصوص محسوبين باش يتراصو بلا تشوه.<br><b>✅ مضمون تلقائياً:</b> كل برومبت يتضمن قيود واقعية إجبارية (Hyper-realistic, ممنوع CGI/3D) ولقطة Macro واحدة على الأقل تثبت جودة المواد.</div>
+
+<div id="critiqueBox"></div>
 
 <div class="sectionblock sb-timeline">
 <h2>🎬 السلسلة البصرية — بالترتيب النفسي</h2>
@@ -342,6 +371,21 @@ iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radi
 <div id="briefModalBody"></div>
 </div>
 
+<!-- ================= رفيق الدردشة الحي مع المخرج ================= -->
+<button class="chatFab" id="chatFab" onclick="toggleChat()" title="دردش مع المخرج">💬</button>
+<div class="chatPanel" id="chatPanel">
+<div class="chatHead">
+<strong>🎬 دردش مع المخرج</strong>
+<button type="button" class="chatClose" onclick="toggleChat()">✕</button>
+</div>
+<div class="chatMsgs" id="chatMsgs"></div>
+<div class="chatQuick" id="chatQuick"></div>
+<div class="chatInputRow">
+<input id="chatInput" placeholder="اسأل المخرج..." onkeydown="if(event.key==='Enter'){event.preventDefault();sendChatMessage();}">
+<button type="button" class="btn-saff" onclick="sendChatMessage()">➤</button>
+</div>
+</div>
+
 <script>
 /* ============================================================
    ستوديو الهبوط V7 — Elite Director
@@ -383,6 +427,15 @@ function enforceRealism(prompt){
 }
 function hasMacroShot(images){
   return (images||[]).some(pi => /macro|close.?up|closeup|تفصيل|قريب/i.test(((pi.composition||'')+' '+(pi.purpose||'')+' '+(pi.scene||''))));
+}
+function buildCritiquePrompt(plan){
+  const imgs = (plan.images||[]).map(pi=>({n:pi.n, composition:pi.composition, prompt:pi.prompt}));
+  return `${ELITE_PERSONA}
+راجع السلسلة البصرية التالية اللي صممتها بنفسك بعين ناقدة صارمة، كأنك مدير إبداعي يراجع عمل مبتدئ قبل التسليم النهائي للعميل:
+${JSON.stringify(imgs)}
+تحقق بدقة من كل صورة: (1) واقعية حقيقية 100% بلا أي مظهر CGI/3D-render/بلاستيكي، (2) تكوين مختلف عن باقي الصور بلا تكرار، (3) عنصر جرافيكي مسيطر واحد فقط لا أكثر (Miller's Law)، (4) البرومبت يحدد حافتي hex بوضوح ويدمج النص العربي بصيغة سليمة.
+إذا لقيت مشكلة في أي برومبت، صححه وأرجعه محسّناً كاملاً بلا اختصار. إذا كان سليم، أرجعه كما هو حرفياً.
+أجب فقط بـ JSON خام: {"critiqueSummary":"جملة أو جملتان بالدارجة تلخص شنو تحسّن أو تأكد","images":[{"n":1,"prompt":"البرومبت النهائي الكامل"}]}`;
 }
 
 /* ---------- المحرك المزدوج ---------- */
@@ -615,6 +668,50 @@ function showBrief(i){
 }
 function closeBrief(){ $('briefModalBg').classList.remove('show'); $('briefModal').classList.remove('show'); }
 
+/* ---------- رفيق الدردشة الحي مع المخرج — استشارة تفاعلية بلا استهلاك API إلا عند الطلب ---------- */
+let chatHistory = [];
+function toggleChat(){
+  const panel=$('chatPanel');
+  panel.classList.toggle('show');
+  if(panel.classList.contains('show') && !chatHistory.length) renderChatQuick();
+}
+function buildChatContext(){
+  const sp=state.specs, pl=state.plan, bp=state.blueprint;
+  let ctx = `${ELITE_PERSONA}\n${DARIJA_RULE}\nأنت الآن تدردش مباشرة مع صاحب المتجر (المستخدم) كمستشار إبداعي وتسويقي حي، ترد بإيجاز (3 إلى 5 أسطر كحد أقصى)، بالدارجة الجزائرية، بأسلوب مخرج واثق ومباشر بلا مقدمات طويلة.\n`;
+  if(sp) ctx += `\nمعلومات المنتج الحالي: ${sp.name||'-'} — ${sp.description||'-'} | السعر: ${sp.price||'-'} دج | الجمهور: ${sp.audience||'-'} | USP: ${sp.usp||'-'}\n`;
+  if(pl && pl.images && pl.images.length) ctx += `\nالسلسلة البصرية الحالية: ${pl.images.length} صور — ${pl.images.map(i=>i.purpose).join('، ')}\n`;
+  if(bp) ctx += `\nمفهوم التصميم الحالي: ${bp.designName||'-'} — ${bp.designRationale||'-'}\n`;
+  return ctx;
+}
+function renderChatQuick(){
+  const suggestions = ['جرب زاوية تسويقية بديلة', 'ليش خترت هذا الترتيب للصور؟', 'اقترح USP أقوى', 'قيّم نقاط الضعف الحالية'];
+  $('chatQuick').innerHTML = suggestions.map(s=>`<button type="button" onclick="quickChat('${s.replace(/'/g,"\\'")}')">${escapeHtml(s)}</button>`).join('');
+}
+function quickChat(text){ $('chatInput').value=text; sendChatMessage(); }
+function renderChatMsgs(){
+  const box=$('chatMsgs'); if(!box) return;
+  box.innerHTML = chatHistory.map(m=>`<div class="chatMsg ${m.role==='user'?'user':'dir'}">${escapeHtml(m.text)}</div>`).join('');
+  box.scrollTop = box.scrollHeight;
+}
+async function sendChatMessage(){
+  const inp=$('chatInput'); const text=inp.value.trim();
+  if(!text) return;
+  chatHistory.push({role:'user', text});
+  inp.value=''; renderChatMsgs();
+  const typing=document.createElement('div'); typing.className='chatTyping'; typing.id='chatTyping'; typing.textContent='المخرج يكتب...';
+  $('chatMsgs').appendChild(typing); $('chatMsgs').scrollTop=$('chatMsgs').scrollHeight;
+  try{
+    const history = chatHistory.slice(-8).map(m=>`${m.role==='user'?'صاحب المتجر':'المخرج'}: ${m.text}`).join('\n');
+    const prompt = buildChatContext() + `\n--- المحادثة حتى الآن ---\n${history}\nالمخرج:`;
+    const reply = await askBrain([], prompt, 600, 0.8, false);
+    chatHistory.push({role:'director', text:(reply||'').trim()});
+  }catch(e){
+    chatHistory.push({role:'director', text:'⚠️ ما قدرتش نرد دابا — تأكد من مفتاح الـAPI. ('+e.message+')'});
+  }
+  const t=$('chatTyping'); if(t) t.remove();
+  renderChatMsgs();
+}
+
 /* ---------- التنقل ---------- */
 function goStep(n){
   state.step = n;
@@ -635,8 +732,9 @@ function resetAll(){
   state = { step:1, productImages:[], slots:[], specs:null, plan:null, blueprint:null, finalHTML:"", tags:{hooks:[],sellingPoints:[],painPoints:[]} };
   ['descIn','priceIn','oldPriceIn','offerIn','specName','specDesc','specAud','specUsp','pixelIn'].forEach(id=>$(id).value='');
   $('specRows').innerHTML=''; $('prodThumbs').innerHTML=''; $('promptCards').innerHTML='';
-  $('continuityWrap').innerHTML=''; $('croCard').innerHTML='';
+  $('continuityWrap').innerHTML=''; $('croCard').innerHTML=''; $('critiqueBox').innerHTML='';
   ['hooks','sellingPoints','painPoints'].forEach(renderTagBox);
+  chatHistory = []; renderChatMsgs();
   goStep(1); toast('مشروع جديد 🆕');
 }
 
@@ -764,6 +862,23 @@ ${d}
       if(Array.isArray(retried.images) && retried.images.length) state.plan = retried;
     }
     (state.plan.images||[]).forEach(pi => { pi.prompt = enforceRealism(pi.prompt); });
+
+    if($('deepModeChk') && $('deepModeChk').checked){
+      btn.innerHTML='<span class="spin">⏳</span> 🧠 وضع التفكير العميق: المخرج يراجع نفسه بعين ناقدة...';
+      toast('🧠 نقد ذاتي إضافي جاري...');
+      try{
+        const critique = await askJSON([], buildCritiquePrompt(state.plan), 6000, 0.3);
+        if(critique && Array.isArray(critique.images)){
+          critique.images.forEach(ci=>{
+            const target = (state.plan.images||[]).find(pi=>pi.n===ci.n);
+            if(target && ci.prompt) target.prompt = enforceRealism(ci.prompt);
+          });
+          state.plan.selfCritique = critique.critiqueSummary || '';
+          toast('✅ المخرج راجع وصحّح السلسلة');
+        }
+      }catch(e){ /* فشل النقد الذاتي لا يوقف السلسلة الأصلية — نتابع بالخطة الحالية */ }
+    }
+
     state.slots = new Array((state.plan.images||[]).length).fill(null);
     renderPlan();
     goStep(3); toast('السلسلة جاهزة 🎬 '+state.plan.imageCount+' صور');
@@ -784,6 +899,9 @@ function renderPlan(){
 <b>🎯 الزاوية:</b> ${st.angle||''}`;
   $('planBox').innerHTML = `<b>🎬 قرار المخرج: ${p.imageCount} ${p.imageCount===1?'صورة':(p.imageCount===2?'صورتان':'صور')}</b><br>${p.reasoning||''}<br>
 <span>النظام البصري:</span> ${(p.styleSystem?.palette||[]).map(h=>`<span class="pal" style="background:${h}" title="${h}"></span>`).join('')} — ${p.styleSystem?.mood||''}`;
+
+  const critiqueEl = $('critiqueBox');
+  critiqueEl.innerHTML = p.selfCritique ? `<div class="critique"><b>🧠 وضع التفكير العميق — النقد الذاتي:</b> ${p.selfCritique}</div>` : '';
 
   const palette = (p.styleSystem&&p.styleSystem.palette&&p.styleSystem.palette.length) ? p.styleSystem.palette : ['#0E6B4F','#E8A33D','#0A4A37','#C77F1B'];
   $('promptCards').innerHTML = (p.images||[]).map((pi,i)=>{

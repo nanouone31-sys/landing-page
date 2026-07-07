@@ -437,6 +437,12 @@ function enforceRealism(prompt){
 function hasMacroShot(images){
   return (images||[]).some(pi => /macro|close.?up|closeup|تفصيل|قريب/i.test(((pi.composition||'')+' '+(pi.purpose||'')+' '+(pi.scene||''))));
 }
+function enforceMotif(prompt, motif){
+  if(!prompt || !motif) return prompt;
+  const firstWords = motif.trim().split(/\s+/).slice(0,4).join(' ');
+  if(firstWords && prompt.toLowerCase().includes(firstWords.toLowerCase())) return prompt;
+  return prompt.trim() + ` Recurring brand signature element (must appear identically in every image of this sequence): ${motif}.`;
+}
 function buildCritiquePrompt(plan){
   const imgs = (plan.images||[]).map(pi=>({n:pi.n, composition:pi.composition, prompt:pi.prompt}));
   return `${ELITE_PERSONA}
@@ -857,8 +863,10 @@ ${DARIJA_RULE}
 2.6) الواقعية الإجبارية (Anti-CGI): الزبون الجزائري يرفض فوراً أي صورة "تبان مصنوعة بالذكاء الاصطناعي" أو "بلاستيكية". كل برومبت — بلا استثناء — يجب أن يفرض: تصوير واقعي خام (raw unedited look)، إضاءة طبيعية قاسية (not studio-perfect)، ملمس حقيقي واضح (خدوش معدن حقيقية، غبار، نسيج قماش، لمعان بلاستيك حقيقي)، وممنوع منعاً باتاً أي مظهر CGI/3D render/AI-plastic-look. هذا شرط غير تفاوضي في كل صورة.
 
 3) السلسلة — القاعدة الذهبية المطلقة: كل صورة تصميم إعلاني كامل مبني من الصفر. المنتج يُستخرج من الصورة المرفقة ويُعاد وضعه في مشهد جديد بالكامل: خلفية مصممة، بيئة، إضاءة سينمائية واقعية (ماشي رندر)، عناصر جرافيكية (شارات، أسهم، price burst، callouts). "صورة المنتج الخام + نص فوقها" = عمل مرفوض يُلغى فوراً.
-نوّع التكوينات إجبارياً (ممنوع تكرار تكوين في صورتين): Hero Shot سينمائي / مشهد استعمال جزائري واقعي / Split مشكل-حل أو قبل-بعد / Flat-lay علوي للعرض والملحقات / لوحة إثبات بأرقام كبيرة — أو ابتكر تكوينات أقوى.
-⚠️ إلزامي غير قابل للتفاوض: صورة واحدة على الأقل من السلسلة يجب أن تكون بتكوين Macro/Close-up تفصيلي فائق القرب يبرز ملمس وجودة المواد الحقيقية (سمك المعدن، دقة الخياطة، نعومة السطح، متانة المفصلات) — هذه الصورة تقتل اعتراض "المنتج رخيص/مقلّد" بصرياً بلا كلام.
+نوّع التكوينات إجبارياً (ممنوع تكرار تكوين في صورتين): Hero Shot سينمائي / Action-Proof Shot (المنتج شغال بالفعل مع دليل بصري حقيقي للقوة: نشارة خشب تطير، شرارات على المعدن، رذاذ ماء، غبار — ماشي وضعية ثابتة) / Dual-Capability Split بخط قطري ديناميكي يفصل بين استعمالين أو مادتين مختلفتين لإثبات التنوع / Flat-lay علوي للعرض والملحقات / لوحة إثبات بأرقام كبيرة أو شارة ختم دائرية (زي ختم شمعي) تؤكد الندرة أو الجودة — أو ابتكر تكوينات أقوى.
+⚠️ إلزامي غير قابل للتفاوض: (أ) صورة واحدة على الأقل بتكوين Macro/Close-up تفصيلي فائق القرب يبرز ملمس وجودة المواد الحقيقية (سمك المعدن، دقة الخياطة، نعومة السطح، متانة المفصلات) — تقتل اعتراض "المنتج رخيص/مقلّد" بصرياً بلا كلام. (ب) صورة واحدة على الأقل بتكوين Action-Proof Shot يبرهن فعالية المنتج بدليل بصري حركي حقيقي.
+
+3.5) الهوية الجرافيكية المتكررة (Brand Motif): اختر عنصر جرافيكي بسيط واحد فقط يتكرر بنفس الشكل عبر كل صور السلسلة بلا استثناء (مثلاً: خط حركة قطري بلون العلامة في نفس الزاوية، أو نمط خطوط رفيعة متكررة في الخلفية، أو شكل شارة موحد) — هذا العنصر هو اللي يخلي السلسلة كاملة تبان كتصميم واحد لعلامة واحدة، ماشي صور منفصلة عشوائية. صفه بدقة إنجليزية في graphicMotif واذكره حرفياً في كل برومبت.
 
 لكل صورة اكتب بوضوح: الغرض، الزناد النفسي، التكوين، وصف المشهد بالدارجة، النص العربي المدموج (قصير ضارب بالدارجة)، حافة الأعلى hex، حافة الأسفل hex (تطابق أعلى الصورة الموالية)، ثم البرومبت الإنجليزي الكامل (80-150 كلمة).
 
@@ -874,7 +882,7 @@ ${d}
 === نهاية التقرير ===
 المخطط:
 {"study":{"strengths":["",""],"objections":["اعتراض → الرد بصرياً"],"coreProblem":"","angle":"الزاوية المختارة وعلاش"},
-"styleSystem":{"palette":["#hex","#hex","#hex","#hex"],"background":"english","lighting":"english","mood":""},
+"styleSystem":{"palette":["#hex","#hex","#hex","#hex"],"background":"english","lighting":"english","mood":"","graphicMotif":"english description of the one recurring graphic accent used in every image"},
 "imageCount": 4,
 "reasoning":"",
 "images":[{"n":1,"purpose":"","trigger":"","composition":"","scene":"","arabicText":"","topEdge":"#hex","bottomEdge":"#hex","prompt":"البرومبت الحرفي الكامل"}]}
@@ -897,7 +905,8 @@ ${d}
       const retried = await askJSON([], mkStruct(draft), 7000, 0.2);
       if(Array.isArray(retried.images) && retried.images.length) state.plan = retried;
     }
-    (state.plan.images||[]).forEach(pi => { pi.prompt = enforceRealism(pi.prompt); });
+    const motif = state.plan.styleSystem && state.plan.styleSystem.graphicMotif;
+    (state.plan.images||[]).forEach(pi => { pi.prompt = enforceMotif(enforceRealism(pi.prompt), motif); });
 
     if($('deepModeChk') && $('deepModeChk').checked){
       btn.innerHTML='<span class="spin">⏳</span> 🧠 وضع التفكير العميق: المخرج يراجع نفسه بعين ناقدة...';
@@ -907,7 +916,7 @@ ${d}
         if(critique && Array.isArray(critique.images)){
           critique.images.forEach(ci=>{
             const target = (state.plan.images||[]).find(pi=>pi.n===ci.n);
-            if(target && ci.prompt) target.prompt = enforceRealism(ci.prompt);
+            if(target && ci.prompt) target.prompt = enforceMotif(enforceRealism(ci.prompt), motif);
           });
           state.plan.selfCritique = critique.critiqueSummary || '';
           toast('✅ المخرج راجع وصحّح السلسلة');
@@ -934,7 +943,8 @@ function renderPlan(){
 <b>😩 المشكل الجوهري:</b> ${st.coreProblem||''}<br>
 <b>🎯 الزاوية:</b> ${st.angle||''}`;
   $('planBox').innerHTML = `<b>🎬 قرار المخرج: ${p.imageCount} ${p.imageCount===1?'صورة':(p.imageCount===2?'صورتان':'صور')}</b><br>${p.reasoning||''}<br>
-<span>النظام البصري:</span> ${(p.styleSystem?.palette||[]).map(h=>`<span class="pal" style="background:${h}" title="${h}"></span>`).join('')} — ${p.styleSystem?.mood||''}`;
+<span>النظام البصري:</span> ${(p.styleSystem?.palette||[]).map(h=>`<span class="pal" style="background:${h}" title="${h}"></span>`).join('')} — ${p.styleSystem?.mood||''}<br>
+<span>🏷️ الهوية الجرافيكية المتكررة:</span> ${p.styleSystem?.graphicMotif||'-'}`;
 
   const critiqueEl = $('critiqueBox');
   critiqueEl.innerHTML = p.selfCritique ? `<div class="critique"><b>🧠 وضع التفكير العميق — النقد الذاتي:</b> ${p.selfCritique}</div>` : '';
@@ -1000,8 +1010,9 @@ ${DARIJA_RULE}
 2) رتب الصور بالترتيب الأمثل نفسياً وبصرياً (فهارس من 0).
 3) ابتكر مفهوم تصميم فريد 100% لهذا المنتج بالذات — كأنك وكالة بـ$50,000 تنافس على Awwwards Site of the Day. ممنوع أي تخطيط جاهز مكرر. designName بالإنجليزية، designRationale بالدارجة: علاش هذا المفهوم بالذات يبيع لهذا الجمهور بالذات.
 4) لوحة ألوان نفسية مستخرجة من صور المنتج: accentColor (يسيطر على CTA — Von Restorff، ويجب أن تكون نسبة تباينه مع خلفية شريط الطلب لا تقل عن 4.5:1 حتى تبقى العين تتوقف عنده بلا مجهود)، primaryColor (داكن للعناوين)، bgColor (خلفية الصفحة). وخطان من هذه القائمة فقط: Cairo, Tajawal, Almarai, Changa, El Messiri, Reem Kufi, Noto Kufi Arabic, Amiri, Lalezar — fontDisplay للعناوين وfontBody للنصوص، الاختيار نفسي (سلطة؟ دفء؟ حداثة؟).
-5) اكتب customCSS إبداعي كامل يطبق مفهومك: خلفيات طبقية، تدرجات ذكية، ظلال حديثة، فواصل أنيقة، بطاقات premium، micro-interactions بـCSS فقط (hover، transitions)، glassmorphism عند اللزوم، هرمية typography، whitespace كعنصر تصميم. تقدر تعيد تصميم: section، h2، .review، details/summary، .trust3، .urgency، .price-new، .cta (ألوان/ظلال/حواف/تدرجات)، footer، وتزيد classes جديدة لأقسامك. قواعد صارمة: بلا @import، بلا url() خارجي، بلا position:fixed، بلا display:none لعناصر موجودة، لا تلمس آلية عمل .sheet و.ctabar و.stack img (جمّلهم فقط).
+5) اكتب customCSS إبداعي كامل يطبق مفهومك: خلفيات طبقية، تدرجات ذكية، ظلال حديثة، فواصل أنيقة، بطاقات premium، micro-interactions بـCSS فقط (hover، transitions)، glassmorphism عند اللزوم، هرمية typography، whitespace كعنصر تصميم. ممنوع الأقسام المستطيلة المسطحة المملة — استلهم من صفحات AYOR القوية: حواف قطرية ديناميكية، عناصر جرافيكية متكررة، طبقات لونية بارزة. تقدر تعيد تصميم: section، h2، .review، details/summary، .trust3، .urgency، .price-new، .cta (ألوان/ظلال/حواف/تدرجات)، footer، وتزيد classes جديدة لأقسامك. قواعد صارمة: بلا @import، بلا url() خارجي، بلا position:fixed، بلا display:none لعناصر موجودة، لا تلمس آلية عمل .sheet و.ctabar و.stack img (جمّلهم فقط).
 6) ثلاثة أقسام HTML semantic نظيفة بالدارجة (بلا script، بلا صور أو روابط خارجية، أيقونات inline SVG فقط): aboveImages = شريط hook قصير فوق الصور يوقف السكرول (اختياري — أرجعه "" إذا الصور كافية بذاتها)، belowImages = القسم الإبداعي الرئيسي بعد شريط الثقة (فوائد بأيقونات، أرقام، مقارنة قبل/بعد — إبداعك)، preFooter = قسم طمأنة/ضمان أخير قبل الفوتر (Peak-End Rule).
+🎨 أدوات جاهزة مضمونة تقدر تستعملها بذكاء داخل هذه الأقسام (بلا داعي تعرّفها بالـcustomCSS، موجودة أصلاً): class="diag-top" أو class="diag-bottom" على أي section لحافة قطرية ديناميكية بدل المستطيل المسطح، وclass="pulse-badge" على span/div صغير وسط المحتوى لشارة CTA نابضة تخطف العين (Von Restorff) — استعملها في مكان واحد استراتيجي بلا إفراط، ماشي في كل قسم.
 7) الكوبي وآلية الإلحاح التكيّفية: cta قصير ضارب، 3 testimonials بتفاصيل ملموسة تبني الثقة، 4 faq تذيب الاعتراضات (توصيل، دفع عند الاستلام، ضمان).
 اختر آلية إلحاح واحدة (urgencyType) الأنسب نفسياً لهذا المنتج بالذات وماشي نفس الآلية دائماً:
 - "countdown": للعروض الحساسة للوقت (خصم مؤقت، مناسبة) — أرجع urgencyHours (عدد الساعات، 3 إلى 12).
@@ -1184,8 +1195,17 @@ h2{color:var(--primary);font-size:1.2rem;margin-bottom:14px;font-weight:800}
 details{background:#faf9f6;border:1px solid #eee;border-radius:12px;padding:12px;margin-bottom:8px}
 summary{font-weight:700;cursor:pointer;color:var(--primary)}
 details p{padding-top:8px;color:#444}
-.trust3{display:flex;gap:8px;text-align:center;padding:14px 16px;background:var(--primary);color:#fff}
-.trust3>div{flex:1;font-size:.78rem;font-weight:700}
+.trust3{display:flex;gap:6px;text-align:center;padding:20px 12px;background:#fff}
+.trust3 .titem{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px}
+.trust3 .ticon{width:44px;height:44px;border-radius:50%;background:var(--bg);border:1.5px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:1.3rem}
+.trust3 .tlabel{font-size:.72rem;font-weight:800;color:var(--primary);line-height:1.3}
+/* أدوات جاهزة يقدر المخرج يستعملها داخل أقسامه: حواف قطرية ديناميكية + شارة CTA نابضة */
+.diag-top{clip-path:polygon(0 18px,100% 0,100% 100%,0 100%)}
+.diag-bottom{clip-path:polygon(0 0,100% 0,100% calc(100% - 18px),0 100%)}
+.pulse-badge{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:#fff;font-weight:800;padding:10px 18px;border-radius:30px;position:relative}
+.pulse-badge::before,.pulse-badge::after{content:'';position:absolute;inset:0;border-radius:30px;border:2px solid var(--accent);opacity:.6;animation:pulseRing 1.8s ease-out infinite}
+.pulse-badge::after{animation-delay:.5s}
+@keyframes pulseRing{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.35);opacity:0}}
 footer{text-align:center;color:#999;font-size:.78rem;padding:24px 0 110px}
 .sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.25s;z-index:95}
 .sheet{position:fixed;bottom:0;right:0;left:0;max-width:520px;margin:0 auto;background:#fff;border-radius:22px 22px 0 0;padding:18px 16px 24px;transform:translateY(105%);transition:.3s cubic-bezier(.2,.9,.3,1);z-index:96;max-height:88vh;overflow:auto}
@@ -1225,7 +1245,11 @@ ${secAbove}
 <div class="stack">
 ${stacked}
 </div>
-<div class="trust3"><div>💵 الدفع عند الاستلام</div><div>🚚 التوصيل 58 ولاية</div><div>✅ ضمان الجودة</div></div>
+<div class="trust3">
+<div class="titem"><span class="ticon">💵</span><span class="tlabel">الدفع عند الاستلام</span></div>
+<div class="titem"><span class="ticon">🚚</span><span class="tlabel">التوصيل 58 ولاية</span></div>
+<div class="titem"><span class="ticon">✅</span><span class="tlabel">ضمان الجودة</span></div>
+</div>
 ${secBelow}
 <section><h2>آراء زبائننا</h2>${reviews}</section>
 <section><h2>أسئلة شائعة</h2>${faqItems}</section>

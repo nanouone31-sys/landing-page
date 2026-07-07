@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎬 ستوديو الهبوط V7 — Elite Director</title>
+<style>
+:root{--bg:#F7F4EC;--ink:#1C2422;--green:#0E6B4F;--greend:#0A4A37;--saff:#E8A33D;--saffd:#C77F1B;--line:#DCD6C6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+.header{background:var(--greend);padding:20px 14px;position:relative;overflow:hidden}
+.header::before{content:'';position:absolute;inset:0;opacity:.12;background-image:repeating-linear-gradient(45deg,var(--saff) 0 2px,transparent 2px 22px),repeating-linear-gradient(-45deg,var(--saff) 0 2px,transparent 2px 22px)}
+.header>div{max-width:720px;margin:0 auto;position:relative}
+.header h1{color:#fff;font-size:1.3rem}
+.header p{color:#CDE7DC;font-size:.85rem;margin-top:4px}
+.stepper{max-width:720px;margin:0 auto;display:flex;gap:4px;padding:12px 14px 0}
+.stepper div{flex:1;text-align:center;font-size:.62rem;font-weight:700;padding:8px 2px;border-radius:8px;background:#E7E2D3;color:#8A8571}
+.stepper div.done{background:var(--green);color:#fff;cursor:pointer}
+.stepper div.now{background:var(--saff);color:#fff}
+.wrap{max-width:720px;margin:0 auto;padding:16px 14px 60px}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+.card h2{font-size:1.02rem;color:var(--greend);margin-bottom:12px}
+label{font-weight:700;font-size:.86rem;display:block;margin-bottom:4px}
+input,textarea,select{width:100%;padding:11px 12px;border:1.5px solid var(--line);border-radius:9px;font-size:1rem;margin-bottom:10px;background:#fff;color:var(--ink);font-family:inherit}
+textarea{min-height:90px;resize:vertical}
+.btn{background:var(--green);color:#fff;border:none;border-radius:10px;padding:13px 18px;font-size:1rem;font-weight:800;cursor:pointer;width:100%}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.ready{box-shadow:0 0 0 4px rgba(14,107,79,.25);animation:readypulse 1.6s infinite}
+@keyframes readypulse{0%,100%{box-shadow:0 0 0 4px rgba(14,107,79,.25)}50%{box-shadow:0 0 0 8px rgba(14,107,79,.06)}}
+.btn-ghost{background:transparent;color:var(--greend);border:1.5px solid var(--green);border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;text-align:center}
+.btn-saff{background:var(--saff);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer}
+.btn-red{background:transparent;color:#B3261E;border:1.5px solid #B3261E;border-radius:10px;padding:10px 14px;font-weight:700;cursor:pointer}
+.err{background:#FDECEA;color:#B3261E;padding:10px;border-radius:8px;margin-bottom:12px;font-weight:700;display:none}
+.toast{position:fixed;top:14px;right:50%;transform:translateX(50%);background:var(--greend);color:#fff;padding:10px 18px;border-radius:10px;font-weight:700;font-size:.88rem;z-index:999;opacity:0;pointer-events:none;transition:.3s;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.toast.show{opacity:1}
+.note{background:#FFF9EC;border:1px solid var(--saff);border-radius:12px;padding:12px;margin-bottom:14px;font-size:.85rem;color:#6b5a2e}
+.note b{color:var(--saffd)}
+.study{background:#F5F2FA;border:1.5px solid #6B4FA1;border-radius:12px;padding:12px;margin-bottom:14px;font-size:.84rem;color:#3d3355}
+.study b{color:#4A3575}
+.plan{background:#EEF6F2;border:1.5px solid var(--green);border-radius:12px;padding:12px;margin-bottom:14px;font-size:.86rem;color:#2d4a3e}
+.drop{display:block;border:2px dashed var(--green);border-radius:12px;padding:22px;text-align:center;cursor:pointer;background:#F2F7F2;margin-bottom:14px}
+.drop strong{display:block}
+.drop p{font-size:.8rem;color:#777;margin-top:4px}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.thumb{position:relative}
+.thumb img{width:80px;height:80px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.thumb .num{position:absolute;bottom:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border-radius:4px;font-size:.65rem;padding:1px 5px}
+.thumb button{position:absolute;top:-6px;left:-6px;background:#B3261E;color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:.7rem}
+
+/* ===== قسم منظّم للمواصفات (المرحلة 2) ===== */
+.sectionblock{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px;border-inline-start:4px solid var(--line)}
+.sectionblock h2{font-size:1.02rem;color:var(--greend);margin-bottom:10px}
+.sectionblock.sb-identity{border-inline-start-color:#8A8571}
+.sectionblock.sb-specs{border-inline-start-color:var(--green)}
+.sectionblock.sb-psych{background:linear-gradient(180deg,#FBF7FF,#fff);border-inline-start-color:#6B4FA1}
+.sectionblock.sb-timeline{border-inline-start-color:var(--saff)}
+.sbhint{font-size:.8rem;color:#777;margin:-4px 0 10px}
+.usplabel{color:var(--saffd)}
+.uspinput{border:2px solid var(--saff)!important;font-weight:800;background:#FFFBF2!important}
+.need{font-size:.7rem;font-weight:800;background:#eee;color:#888;border-radius:20px;padding:1px 8px;margin-inline-start:6px}
+.need.ok{background:#DFF3E9;color:#0A4A37}
+.tagbox{display:flex;flex-wrap:wrap;gap:6px;min-height:34px;padding:6px 2px;margin-bottom:8px}
+.tag{display:inline-flex;align-items:center;gap:6px;background:#EEF6F2;border:1px solid var(--green);color:var(--ink);border-radius:20px;padding:6px 10px;font-size:.82rem}
+.tag button{background:none;border:none;color:#B3261E;cursor:pointer;font-size:.8rem;line-height:1;padding:0}
+.tag-empty{color:#aaa;font-size:.8rem;padding:6px 2px}
+.tagadd{display:flex;gap:6px;margin-bottom:14px}
+.tagadd input{flex:1;margin-bottom:0}
+
+.pcard{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+.pcard .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px}
+.pcard .txt{font-size:.75rem;color:#555;background:#FAF8F1;padding:8px;border-radius:6px;max-height:80px;overflow:auto;direction:ltr;text-align:left}
+.pcard .meta{font-size:.78rem;color:#555;margin-top:2px}
+.edge{width:16px;height:16px;border-radius:4px;border:1px solid #ccc;display:inline-block;vertical-align:middle}
+.pal{width:24px;height:24px;border-radius:6px;border:1px solid #ccc;display:inline-block;vertical-align:middle;margin-left:4px}
+.spec-row{display:flex;gap:6px}
+.spec-row input:first-child{flex:1}
+.spec-row input:nth-child(2){flex:1.4}
+.spec-row button{background:none;border:none;cursor:pointer;font-size:1rem}
+.row2{display:flex;gap:10px}
+.row2>div{flex:1}
+.hint{background:#F2F7F2;border-radius:10px;padding:12px;font-size:.84rem;color:#444;margin-bottom:12px}
+iframe{width:390px;max-width:100%;height:620px;border:6px solid #222;border-radius:24px;background:#fff;display:block;margin:0 auto}
+.spin{display:inline-block;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.engine{display:flex;gap:8px;margin-bottom:10px}
+.engine label{flex:1;border:1.5px solid var(--line);border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:.85rem;margin:0}
+.engine input{display:none}
+.engine label.on{border-color:var(--green);background:#F2F7F2;color:var(--greend)}
+.small{font-size:.78rem;color:#999;text-align:center;margin-top:8px}
+#claudeKeyBox{display:none}
+
+/* ===== شريط أعلى المرحلة 3 (تقدّم + إجراءات) ===== */
+.storytop{position:sticky;top:0;background:var(--bg);padding:10px 0;z-index:5;margin-bottom:4px}
+.storyprogress{font-size:.82rem;font-weight:700;color:var(--greend);margin-bottom:8px;text-align:center}
+.storybtns{display:flex;gap:8px}
+.storybtns button{flex:1}
+
+/* ===== السرد البصري (Storyboard timeline) ===== */
+.timeline{display:flex;flex-direction:column}
+.tlitem{display:flex;gap:10px}
+.tlrail{display:flex;flex-direction:column;align-items:center;width:30px;flex:0 0 30px}
+.tlnode{width:28px;height:28px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.82rem;flex:0 0 auto;box-shadow:0 2px 6px rgba(0,0,0,.2)}
+.tlline{flex:1;width:3px;background:var(--line);margin:2px 0;min-height:16px}
+.tlitem:last-child .tlline{display:none}
+.tlcontent{flex:1;padding-bottom:16px;min-width:0}
+.tlhead{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap}
+.tlhead strong{color:var(--greend);font-size:.92rem}
+.pill{background:#F2E9FF;color:#4A3575;font-size:.68rem;font-weight:800;border-radius:20px;padding:3px 9px;white-space:nowrap}
+.tlmeta{font-size:.78rem;color:#555;margin-bottom:3px}
+.tledges{margin-bottom:6px}
+.tlprompt{background:#FAF8F1;border-radius:8px;padding:2px 8px;margin-bottom:8px}
+.tlprompt summary{cursor:pointer;font-size:.78rem;font-weight:700;color:var(--green);padding:6px 0}
+.tlprompt .txt{font-size:.74rem;color:#555;max-height:180px;overflow:auto;direction:ltr;text-align:left;padding:8px;background:#fff;border-radius:6px;margin-bottom:8px}
+
+/* ===== شريط تقدّم رفع الصور (المرحلة 4) ===== */
+.progressbar{height:8px;background:#E7E2D3;border-radius:20px;overflow:hidden;margin-bottom:8px}
+.progressfill{height:100%;background:linear-gradient(90deg,var(--green),var(--saff));width:0%;transition:.3s}
+
+/* شبكة الفتحات المرقمة */
+.slotgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+.slot{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:150px;border:2px dashed var(--line);border-radius:12px;cursor:pointer;background:#FAF8F1;text-align:center;padding:8px;overflow:hidden}
+.slot.filled{border-style:solid;border-color:var(--green)}
+.slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.slot .slabel{position:relative;z-index:2;background:rgba(255,255,255,.9);border-radius:8px;padding:4px 8px;font-size:.72rem;font-weight:700;color:var(--greend);max-width:95%}
+.slot.filled .slabel{position:absolute;bottom:6px}
+.slot .rm{position:absolute;top:4px;left:4px;z-index:3;background:#B3261E;color:#fff;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:.7rem}
+.slot .info{position:absolute;top:4px;right:4px;z-index:3;background:rgba(255,255,255,.9);border:1px solid var(--line);border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:.72rem;display:flex;align-items:center;justify-content:center}
+.slotstatus{font-size:.82rem;font-weight:700;color:var(--greend);margin-bottom:10px;text-align:center}
+
+/* ===== نافذة موجزة (Brief) لكل صورة أثناء الرفع ===== */
+.modalbg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200}
+.modalbg.show{display:block}
+.modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:14px;padding:18px;max-width:420px;width:90%;max-height:80vh;overflow:auto;z-index:201}
+.modal.show{display:block}
+.modal h2{font-size:1rem;color:var(--greend)}
+.modalclose{position:absolute;top:8px;left:8px;background:none;border:none;font-size:1.1rem;cursor:pointer;color:#999}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<div class="header"><div>
+<h1>🎬 ستوديو الهبوط V7 — Elite Director</h1>
+<p>مخرج نخبوي CRO + مصمم يبتكر تصميم فريد لكل منتج — محرك مزدوج — أسلوب AYOR متراص</p>
+</div></div>
+
+<div class="stepper" id="stepper">
+<div data-s="1">1. الإعداد + المنتج</div>
+<div data-s="2">2. المواصفات</div>
+<div data-s="3">3. السلسلة البصرية</div>
+<div data-s="4">4. الرفع + الإخراج</div>
+<div data-s="5">5. الصفحة</div>
+</div>
+
+<div class="wrap">
+<div class="err" id="err"></div>
+
+<!-- ================= المرحلة 1 ================= -->
+<div id="step1">
+<div class="card">
+<h2>⚙️ الإعداد — اختر محرك الذكاء</h2>
+<div class="engine" id="engineSel">
+<label class="on" data-e="gemini"><input type="radio" name="eng" value="gemini" checked>🆓 Gemini 2.5 Flash<br><small>مجاني من AI Studio</small></label>
+<label data-e="claude"><input type="radio" name="eng" value="claude">🧠 Claude Sonnet<br><small>مفتاح مدفوع (اختياري)</small></label>
+</div>
+<div id="geminiKeyBox">
+<label>Gemini API Key (مجاني) *</label>
+<input type="password" id="gmkey" placeholder="AIza...">
+<p class="small">اصنعه مجاناً من <a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> — يتسجل في متصفحك فقط</p>
+</div>
+<div id="claudeKeyBox">
+<label>Anthropic API Key</label>
+<input type="password" id="clkey" placeholder="sk-ant-...">
+<p class="small">من <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> — يستهلك رصيد مدفوع</p>
+</div>
+</div>
+<div class="card">
+<h2>📸 المرحلة 1 — صور المنتج + وصفك</h2>
+<label class="drop">
+<span style="font-size:1.5rem">⬆️</span>
+<strong>اضغط هنا لاختيار صور المنتج</strong>
+<p>صور المورّد ولا تصويرك (1-4 صور)</p>
+<input type="file" accept="image/png,image/jpeg,image/webp" multiple style="display:none" onchange="pickFiles(this,'product')">
+</label>
+<div class="thumbs" id="prodThumbs"></div>
+<label>وصف المنتج (بأي لغة — الذكاء يدمجه مع تحليل الصور)</label>
+<textarea id="descIn" placeholder="مثال: غسالة ضغط 140 بار، موتور نحاس، تجي مع 5 رؤوس، ضمان سنة..."></textarea>
+<div class="row2">
+<div><label>السعر (دج) *</label><input id="priceIn" placeholder="12900"></div>
+<div><label>السعر القديم</label><input id="oldPriceIn" placeholder="16500"></div>
+</div>
+<label>العرض (اختياري)</label>
+<input id="offerIn" placeholder="توصيل مجاني + هدية">
+<button class="btn" id="btnAnalyze" onclick="analyzeProduct()">🧠 حلل واستخرج المواصفات ←</button>
+</div>
+</div>
+
+<!-- ================= المرحلة 2 — منظّمة بثلاث كتل واضحة ================= -->
+<div id="step2" style="display:none">
+
+<div class="sectionblock sb-identity">
+<h2>🏷️ الهوية — من هو المنتج؟</h2>
+<label>اسم المنتج</label><input id="specName">
+<label>الوصف النهائي</label><textarea id="specDesc" style="min-height:70px"></textarea>
+<label>الجمهور المستهدف</label><input id="specAud">
+</div>
+
+<div class="sectionblock sb-specs">
+<h2>📐 المواصفات التقنية</h2>
+<p class="sbhint">راجع القيم التقديرية (بعلامة ~) وصحّحها إذا لم تكن دقيقة.</p>
+<div id="specRows"></div>
+<button class="btn-ghost" type="button" onclick="addSpecRow('','')">+ زد مواصفة</button>
+</div>
+
+<div class="sectionblock sb-psych">
+<h2>🧠 الأسلحة النفسية — هنا يُصنع قرار الشراء</h2>
+<p class="sbhint">هذا القسم هو الأهم في الصفحة كاملة: كل عنصر هنا يقرر إذا الزبون يشري أو يخرج.</p>
+
+<label class="usplabel">💎 الـ USP — جملة التميّز القاتلة</label>
+<input id="specUsp" class="uspinput" placeholder="الجملة الوحيدة اللي تخلي الزبون يقول: هذا لي خاصني">
+
+<label>🪝 الهوكات — توقف السكرول <span class="need" id="tagcounter_hooks">0 / 3</span></label>
+<div class="tagbox" id="tagbox_hooks"></div>
+<div class="tagadd">
+<input id="taginput_hooks" placeholder="اكتب هوك واضغط Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();addTagFromInput('hooks');}">
+<button type="button" class="btn-saff" onclick="addTagFromInput('hooks')">+</button>
+</div>
+
+<label>🎯 نقاط البيع النفسية <span class="need" id="tagcounter_sellingPoints">0 / 5</span></label>
+<div class="tagbox" id="tagbox_sellingPoints"></div>
+<div class="tagadd">
+<input id="taginput_sellingPoints" placeholder="اكتب نقطة بيع واضغط Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();addTagFromInput('sellingPoints');}">
+<button type="button" class="btn-saff" onclick="addTagFromInput('sellingPoints')">+</button>
+</div>
+
+<label>😩 آلام الزبون <span class="need" id="tagcounter_painPoints">0 / 3</span></label>
+<div class="tagbox" id="tagbox_painPoints"></div>
+<div class="tagadd">
+<input id="taginput_painPoints" placeholder="اكتب ألم واضغط Enter" onkeydown="if(event.key==='Enter'){event.preventDefault();addTagFromInput('painPoints');}">
+<button type="button" class="btn-saff" onclick="addTagFromInput('painPoints')">+</button>
+</div>
+</div>
+
+<button class="btn" id="btnPlan" onclick="genPlan()">🎬 صمم السلسلة البصرية ←</button>
+</div>
+
+<!-- ================= المرحلة 3 — Storyboard واضح المتابعة ================= -->
+<div id="step3" style="display:none">
+
+<div class="storytop">
+<div class="storyprogress" id="storyProgressTxt"></div>
+<div class="storybtns">
+<button class="btn-ghost" type="button" onclick="toggleStudy()" id="btnToggleStudy">📊 الدراسة والقرار الإخراجي</button>
+<button class="btn-saff" type="button" onclick="copyAllPrompts()">📋 انسخ كل البرومبتات</button>
+</div>
+</div>
+
+<div id="studyWrap" style="display:none">
+<div class="study" id="studyBox"></div>
+<div class="plan" id="planBox"></div>
+</div>
+
+<div class="note"><b>⚠️ مهم للتناسق:</b> ولّد الصور <b>بالترتيب وفي نفس المحادثة</b> في Gemini، وأرفق صورة المنتج مع كل برومبت. الحواف والنصوص محسوبين باش يتراصو بلا تشوه.</div>
+
+<div class="sectionblock sb-timeline">
+<h2>🎬 السلسلة البصرية — بالترتيب النفسي</h2>
+<div class="timeline" id="promptCards"></div>
+<div class="row2" style="margin-top:6px">
+<a href="https://gemini.google.com" target="_blank" class="btn-ghost" style="flex:1">افتح Gemini ↗</a>
+<a href="https://grok.com" target="_blank" class="btn-ghost" style="flex:1">افتح Grok ↗</a>
+</div>
+</div>
+
+<button class="btn" onclick="goStep(4)">ولّدت السلسلة؟ التالي ←</button>
+</div>
+
+<!-- ================= المرحلة 4 — رفع مع تتبع وترتيب مرئي ================= -->
+<div id="step4" style="display:none">
+<div class="card">
+<h2>🖼️ المرحلة 4 — كل صورة في فتحتها</h2>
+<div class="progressbar"><div class="progressfill" id="slotProgressFill"></div></div>
+<div class="slotstatus" id="slotStatus"></div>
+<div class="slotgrid" id="slotGrid"></div>
+<p class="sbhint">💡 صورة مرفوعة؟ اسحبها وحطها في فتحة أخرى إذا بغيت تبدّل الترتيب. اضغط ℹ️ لمراجعة تفاصيل أي صورة بلا رجوع للخلف.</p>
+<div class="hint">🎬 المخرج راح يفحص <b>تناسق الألوان والحواف</b> بين كل صورتين متتاليتين، يستبعد أي صورة مشوهة ولا بنص غالط، يرتب التراص، ويكتب الكوبي بالدارجة الجزائرية.</div>
+</div>
+<div class="card">
+<label>Meta Pixel ID (اختياري)</label>
+<input id="pixelIn" placeholder="123456789012345">
+<button class="btn" id="btnBuild" onclick="directAndBuild()">🎬 افحص التناسق وابنِ الصفحة</button>
+</div>
+</div>
+
+<!-- ================= المرحلة 5 ================= -->
+<div id="step5" style="display:none">
+<div class="plan" id="checkBox"></div>
+<div class="card">
+<h2>✅ الصفحة جاهزة (معاينة موبايل)</h2>
+<div class="row2" style="margin-bottom:10px">
+<button class="btn" style="flex:1" onclick="downloadPage()">⬇️ حمّل HTML</button>
+<button class="btn-ghost" style="flex:1" onclick="copyHTML(this)">📋 انسخ الكود</button>
+</div>
+<div class="row2" style="margin-bottom:12px">
+<button class="btn-ghost" style="flex:1" onclick="goStep(4)">← عدّل الصور</button>
+<button class="btn-red" style="flex:1" onclick="resetAll()">🗑️ مشروع جديد</button>
+</div>
+<iframe id="preview"></iframe>
+</div>
+</div>
+
+</div>
+
+<div class="modalbg" id="briefModalBg" onclick="closeBrief()"></div>
+<div class="modal" id="briefModal">
+<button class="modalclose" onclick="closeBrief()">✕</button>
+<div id="briefModalBody"></div>
+</div>
+
+<script>
+/* ============================================================
+   ستوديو الهبوط V7 — Elite Director
+   قاعدة V6 + تنظيم بصري لمراحل 2-3-4:
+   - المرحلة 2: كتل مقسّمة (هوية / مواصفات / أسلحة نفسية) + محررات وسوم (chips) بدل textarea أسطر
+   - المرحلة 3: storyboard بخط زمني مرقم بدل قائمة مسطحة + طي الدراسة + نسخ كل البرومبتات دفعة وحدة
+   - المرحلة 4: شريط تقدّم مرئي + سحب-وإفلات لإعادة الترتيب + نافذة موجز سريع لكل صورة
+   ============================================================ */
+const WILAYAS = ["01 - أدرار","02 - الشلف","03 - الأغواط","04 - أم البواقي","05 - باتنة","06 - بجاية","07 - بسكرة","08 - بشار","09 - البليدة","10 - البويرة","11 - تمنراست","12 - تبسة","13 - تلمسان","14 - تيارت","15 - تيزي وزو","16 - الجزائر","17 - الجلفة","18 - جيجل","19 - سطيف","20 - سعيدة","21 - سكيكدة","22 - سيدي بلعباس","23 - عنابة","24 - قالمة","25 - قسنطينة","26 - المدية","27 - مستغانم","28 - المسيلة","29 - معسكر","30 - ورقلة","31 - وهران","32 - البيض","33 - إليزي","34 - برج بوعريريج","35 - بومرداس","36 - الطارف","37 - تندوف","38 - تيسمسيلت","39 - الوادي","40 - خنشلة","41 - سوق أهراس","42 - تيبازة","43 - ميلة","44 - عين الدفلى","45 - النعامة","46 - عين تموشنت","47 - غرداية","48 - غليزان","49 - تيميمون","50 - برج باجي مختار","51 - أولاد جلال","52 - بني عباس","53 - عين صالح","54 - عين قزام","55 - تقرت","56 - جانت","57 - المغير","58 - المنيعة"];
+
+const DARIJA_RULE = '⚠️ اللغة: كل نص عربي بالدارجة الجزائرية الصرفة (بصح، برك، شحال، بزاف، مليح، هايل، درك، تاع، كي، علاش، وين، يوصلك حتى لباب الدار). ممنوع منعاً باتاً المصطلحات المغربية: ديال، واخا، دابا، زوين، عافاك، بغيت — ولا المشرقية المتكلفة.';
+
+const ELITE_PERSONA = `You are not an ordinary HTML designer.
+You are an Elite Landing Page Creative Director with over 20 years of experience in Conversion Rate Optimization (CRO), UI/UX Design, Consumer Psychology, Neuromarketing, Visual Communication, and Premium E-commerce.
+Your qualifications: PhD in Consumer Psychology, PhD in Behavioral Economics, Master's in Human Computer Interaction (HCI), Certified UX Researcher, Certified Conversion Rate Optimization Specialist, Expert in Persuasive Copywriting, Senior Art Director, Senior Front-End Engineer (HTML5, CSS3, JavaScript), Branding Expert, Eye Tracking Analysis Specialist.
+You think like: Apple Design Team, Nike Creative Studio, Stripe Design Team, Shopify Landing Page Experts, Awwwards Winners, Dribbble Top Designers, Behance Featured Designers.
+Your goal is NOT to create a beautiful page. Your only objective is to maximize conversion rate. Every design decision must psychologically push the visitor toward purchasing.
+You deeply understand: Visual hierarchy, F-pattern scanning, Z-pattern reading, Eye tracking, Emotional triggers, Dopamine effect, Cognitive bias, Scarcity, Urgency, Social proof, Authority, Trust building, Color psychology, Typography psychology, Gestalt principles, Hick's Law, Miller's Law, Von Restorff Effect, Peak-End Rule, Anchoring Effect, Framing Effect, Decoy Effect, Loss Aversion, Micro-interactions, Premium branding, Luxury product presentation.
+When creating HTML: Never create generic sections. Every section must have a psychological purpose. Every color must have meaning. Every spacing must improve readability. Every animation must guide attention. Every CTA must dominate the visual hierarchy. Every product image must feel premium. Every headline must stop scrolling. Every icon must reinforce trust.
+Avoid templates. Avoid repetitive layouts. Think outside the box. Invent unique layouts. Design as if competing for the Awwwards "Site of the Day".
+Animations must be subtle and premium. Create smooth transitions. Use glassmorphism only when appropriate. Use gradients intelligently. Use modern shadows. Create premium cards. Use layered backgrounds. Add premium hover effects. Create elegant separators. Never overcrowd the page. Whitespace is a design element.
+Design should feel luxurious, modern, emotional and highly trustworthy. Every page must look unique. Never reuse the same layout twice. Your final work should look like it was created by a $50,000 professional design agency.`;
+
+let state = { step: 1, productImages: [], slots: [], specs: null, plan: null, blueprint: null, finalHTML: "", tags:{hooks:[],sellingPoints:[],painPoints:[]} };
+
+/* ---------- أدوات ---------- */
+const $ = (id) => document.getElementById(id);
+function showErr(m){ const e=$('err'); e.textContent='⚠️ '+m; e.style.display='block'; window.scrollTo({top:0,behavior:'smooth'}); }
+function clearErr(){ $('err').style.display='none'; }
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000); }
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ---------- المحرك المزدوج ---------- */
+$('gmkey').value = localStorage.getItem('gm_key') || '';
+$('clkey').value = localStorage.getItem('cl_key') || '';
+$('gmkey').addEventListener('change', e => localStorage.setItem('gm_key', e.target.value.trim()));
+$('clkey').addEventListener('change', e => localStorage.setItem('cl_key', e.target.value.trim()));
+let ENGINE = localStorage.getItem('brain_engine') || 'gemini';
+function applyEngineUI(){
+  document.querySelectorAll('#engineSel label').forEach(l=>{
+    l.classList.toggle('on', l.dataset.e===ENGINE);
+    l.querySelector('input').checked = l.dataset.e===ENGINE;
+  });
+  $('geminiKeyBox').style.display = ENGINE==='gemini'?'block':'none';
+  $('claudeKeyBox').style.display = ENGINE==='claude'?'block':'none';
+}
+document.querySelectorAll('#engineSel label').forEach(l=>l.addEventListener('click',()=>{
+  ENGINE=l.dataset.e; localStorage.setItem('brain_engine',ENGINE); applyEngineUI();
+}));
+applyEngineUI();
+
+async function askBrain(images, text, maxTokens=4500, temp=0.7, jsonMode=true){
+  if(ENGINE==='claude') return askClaudeAPI(images, text, maxTokens, temp);
+  return askGemini(images, text, maxTokens, temp, jsonMode);
+}
+async function askGemini(images, text, maxTokens, temp=0.7, jsonMode=true){
+  const key = $('gmkey').value.trim();
+  if(!key) throw new Error('حط مفتاح Gemini المجاني في الإعداد (المرحلة 1)');
+  const parts = [...images.map(im=>({inline_data:{mime_type:'image/jpeg',data:(im.apiUrl||im.dataUrl).split(',')[1]}})),{text}];
+  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+encodeURIComponent(key),{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({contents:[{parts}],generationConfig:Object.assign({maxOutputTokens:maxTokens,temperature:temp}, jsonMode?{responseMimeType:'application/json'}:{})})
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error.message||'خطأ من Gemini');
+  const t=(data.candidates?.[0]?.content?.parts||[]).map(p=>p.text||'').join('');
+  if(!t) throw new Error('رد فارغ — عاود جرب ولا نقص عدد الصور');
+  return t;
+}
+async function askClaudeAPI(images, text, maxTokens, temp=0.7){
+  const key = $('clkey').value.trim();
+  if(!key) throw new Error('حط مفتاح Anthropic ولا ارجع لمحرك Gemini المجاني');
+  const content = [...images.map(im=>({type:'image',source:{type:'base64',media_type:'image/jpeg',data:(im.apiUrl||im.dataUrl).split(',')[1]}})),{type:'text',text}];
+  const res = await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body: JSON.stringify({model:'claude-sonnet-4-6',max_tokens:maxTokens,temperature:temp,messages:[{role:'user',content}]})
+  });
+  const data = await res.json();
+  if(data.error) throw new Error(data.error.message||'خطأ من Claude');
+  const t=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  if(!t) throw new Error('رد فارغ من Claude');
+  return t;
+}
+function parseJSON(t){
+  let c = t.replace(/```json|```/g,'').trim();
+  c = c.slice(c.indexOf('{'), c.lastIndexOf('}')+1);
+  try { return JSON.parse(c); } catch(e) {}
+  c = c.replace(/\]\s*\([^()]*\)/g, ']')
+       .replace(/\}\s*\([^()]*\)/g, '}')
+       .replace(/,\s*([}\]])/g, '$1');
+  return JSON.parse(c);
+}
+
+/* استدعاء + تحليل مع إعادة محاولة تلقائية */
+async function askJSON(images, text, maxTokens, temp=0.7){
+  let lastErr;
+  for(let a=0; a<2; a++){
+    try{ return parseJSON(await askBrain(images, text, maxTokens, temp)); }
+    catch(e){ lastErr=e; if(a===0) toast('رد غير سليم — نعاود المحاولة تلقائياً 🔄'); }
+  }
+  throw lastErr;
+}
+
+/* ---------- الرفع + التصغير ---------- */
+function shrinkImage(dataUrl, maxSide=900){
+  return new Promise(res=>{
+    const img=new Image();
+    img.onload=()=>{
+      const sc=Math.min(1,maxSide/Math.max(img.width,img.height));
+      const cv=document.createElement('canvas');
+      cv.width=Math.round(img.width*sc); cv.height=Math.round(img.height*sc);
+      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      res(cv.toDataURL('image/jpeg',0.82));
+    };
+    img.onerror=()=>res(dataUrl);
+    img.src=dataUrl;
+  });
+}
+function pickFiles(input, kind){
+  [...input.files].forEach(f=>{
+    if(!f.type.startsWith('image/')) return;
+    const r=new FileReader();
+    r.onload=async ()=>{
+      const apiUrl=await shrinkImage(r.result);
+      state.productImages.push({ id:Math.random().toString(36).slice(2), dataUrl:r.result, apiUrl });
+      renderThumbs();
+    };
+    r.readAsDataURL(f);
+  });
+  input.value='';
+}
+function removeImg(id){ state.productImages=state.productImages.filter(x=>x.id!==id); renderThumbs(); }
+function renderThumbs(){
+  $('prodThumbs').innerHTML = state.productImages.map((im,i)=>`<div class="thumb"><img src="${im.dataUrl}"><span class="num">${i+1}</span><button onclick="removeImg('${im.id}')">✕</button></div>`).join('');
+}
+
+/* ---------- محررات الوسوم (chips) للأسلحة النفسية — المرحلة 2 ---------- */
+const TAG_RULES = {hooks:{min:3,label:'هوكات'}, sellingPoints:{min:5,label:'نقاط بيع'}, painPoints:{min:3,label:'آلام'}};
+function renderTagBox(key){
+  const box=$('tagbox_'+key); if(!box) return;
+  const arr=state.tags[key]||[];
+  box.innerHTML = arr.length
+    ? arr.map((t,i)=>`<span class="tag">${escapeHtml(t)}<button type="button" onclick="removeTag('${key}',${i})">✕</button></span>`).join('')
+    : '<span class="tag-empty">لا يوجد بعد — زد بالأسفل</span>';
+  const rule=TAG_RULES[key], cEl=$('tagcounter_'+key);
+  if(cEl){ cEl.textContent = `${arr.length} / ${rule.min}`; cEl.classList.toggle('ok', arr.length>=rule.min); }
+}
+function addTagFromInput(key){
+  const inp=$('taginput_'+key); const v=inp.value.trim();
+  if(!v) return;
+  state.tags[key]=state.tags[key]||[]; state.tags[key].push(v);
+  inp.value=''; renderTagBox(key);
+}
+function removeTag(key,i){ state.tags[key].splice(i,1); renderTagBox(key); }
+['hooks','sellingPoints','painPoints'].forEach(renderTagBox);
+
+/* ---------- فتحات السلسلة المرقمة — المرحلة 4 ---------- */
+let dragFromIdx=null;
+function dragSlot(e,i){ dragFromIdx=i; e.dataTransfer.effectAllowed='move'; }
+function dropSlot(e,i){
+  e.preventDefault();
+  if(dragFromIdx===null || dragFromIdx===i) return;
+  const tmp=state.slots[i]; state.slots[i]=state.slots[dragFromIdx]; state.slots[dragFromIdx]=tmp;
+  dragFromIdx=null; renderSlots(); toast('بدّلنا ترتيب الصور 🔄');
+}
+function renderSlots(){
+  const grid=$('slotGrid');
+  if(!state.plan?.images?.length){ grid.innerHTML='<p style="color:#999">صمم السلسلة أولاً</p>'; $('slotStatus').textContent=''; $('slotProgressFill').style.width='0%'; return; }
+  grid.innerHTML = state.plan.images.map((pi,i)=>{
+    const img = state.slots[i];
+    return `<label class="slot${img?' filled':''}" ${img?`draggable="true" ondragstart="dragSlot(event,${i})"`:''} ondragover="event.preventDefault()" ondrop="dropSlot(event,${i})">
+      ${img?`<img src="${img.dataUrl}"><button type="button" class="rm" onclick="event.preventDefault();removeSlot(${i})">✕</button>`:''}
+      <button type="button" class="info" onclick="event.preventDefault();showBrief(${i})">ℹ️</button>
+      <div class="slabel">${img?'':'📷 '}صورة ${pi.n}: ${pi.purpose}</div>
+      ${img?'':'<div style="font-size:.65rem;color:#999;position:relative;z-index:2">اضغط للرفع</div>'}
+      <input type="file" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="pickSlot(this,${i})">
+    </label>`;
+  }).join('');
+  const total=state.plan.images.length, up=state.slots.filter(Boolean).length;
+  $('slotStatus').textContent = `${up} من ${total} صورة مرفوعة` + (up===total?' ✅ السلسلة كاملة':'');
+  $('slotProgressFill').style.width = (total?Math.round(up/total*100):0)+'%';
+  $('btnBuild').classList.toggle('ready', up===total && total>0);
+}
+function pickSlot(input, idx){
+  const f=input.files[0]; input.value='';
+  if(!f || !f.type.startsWith('image/')) return;
+  const r=new FileReader();
+  r.onload=async ()=>{
+    const apiUrl=await shrinkImage(r.result);
+    state.slots[idx]={ dataUrl:r.result, apiUrl };
+    renderSlots();
+    toast('صورة '+(idx+1)+' ترفعت ✅');
+  };
+  r.readAsDataURL(f);
+}
+function removeSlot(i){ state.slots[i]=null; renderSlots(); }
+function showBrief(i){
+  const pi=state.plan?.images?.[i]; if(!pi) return;
+  $('briefModalBody').innerHTML = `<h2 style="margin-bottom:10px">صورة ${pi.n} — ${pi.purpose}</h2>
+<p class="meta">🧲 الزناد النفسي: <b>${pi.trigger||'-'}</b></p>
+<p class="meta">🎬 التكوين: <b>${pi.composition||'-'}</b></p>
+<p class="meta">${pi.scene||''}</p>
+<p class="meta">النص المدموج: «${pi.arabicText||''}»</p>`;
+  $('briefModalBg').classList.add('show'); $('briefModal').classList.add('show');
+}
+function closeBrief(){ $('briefModalBg').classList.remove('show'); $('briefModal').classList.remove('show'); }
+
+/* ---------- التنقل ---------- */
+function goStep(n){
+  state.step = n;
+  for(let i=1;i<=5;i++) $('step'+i).style.display = (i===n?'block':'none');
+  document.querySelectorAll('#stepper div').forEach(d=>{
+    const s=+d.dataset.s;
+    d.className = s===n?'now':(s<n?'done':'');
+    d.onclick = s<n ? ()=>goStep(s) : null;
+  });
+  if(n===4) renderSlots();
+  clearErr();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+goStep(1);
+
+function resetAll(){
+  if(!confirm('تبدا مشروع جديد؟ كلش الحالي راح يتمسح.')) return;
+  state = { step:1, productImages:[], slots:[], specs:null, plan:null, blueprint:null, finalHTML:"", tags:{hooks:[],sellingPoints:[],painPoints:[]} };
+  ['descIn','priceIn','oldPriceIn','offerIn','specName','specDesc','specAud','specUsp','pixelIn'].forEach(id=>$(id).value='');
+  $('specRows').innerHTML=''; $('prodThumbs').innerHTML=''; $('promptCards').innerHTML='';
+  ['hooks','sellingPoints','painPoints'].forEach(renderTagBox);
+  goStep(1); toast('مشروع جديد 🆕');
+}
+
+/* ============ 1→2: تحليل الوصف + الصور ============ */
+async function analyzeProduct(){
+  clearErr();
+  const price=$('priceIn').value.trim();
+  if(!state.productImages.length || !price){ showErr('ارفع صور المنتج واكتب السعر'); return; }
+  const btn=$('btnAnalyze'); btn.disabled=true; btn.innerHTML='<span class="spin">⏳</span> يحلل الوصف + الصور مع بعض...';
+  try{
+    const j = await askJSON(state.productImages.slice(0,4),
+`${ELITE_PERSONA}
+
+مهمتك الآن: خبير منتجات وتسويق للسوق الجزائري (COD).
+ادرس معاً: (أ) صور المنتج المرفقة، (ب) وصف صاحب المتجر التالي — واستخرج أفضل مواصفات بدمج المصدرين. إذا تعارضا، الوصف المكتوب أولى.
+--- وصف صاحب المتجر ---
+${$('descIn').value.trim() || '(بلا وصف — اعتمد على الصور فقط)'}
+--- نهاية الوصف ---
+السعر: ${price} دج | القديم: ${$('oldPriceIn').value||'-'} | العرض: ${$('offerIn').value||'-'}
+${DARIJA_RULE}
+أجب فقط بـ JSON خام:
+{"name":"اسم تجاري جذاب بالعربية","category":"الفئة","audience":"الجمهور الأنسب في الجزائر",
+"description":"وصف نهائي مدموج ودقيق",
+"visualIdentity":"وصف بصري دقيق بالإنجليزية للمنتج (شكل، ألوان hex تقريبية، أجزاء مميزة)",
+"specs":[{"k":"اسم المواصفة","v":"القيمة"}],
+"sellingPoints":["نقطة بيع نفسية بالدارجة"],
+"painPoints":["ألم حقيقي يعيشه الزبون بالدارجة"],
+"hooks":["هوك قصير ضارب بالدارجة يكسر النمط ويوقف السكرول"],
+"usp":"جملة التميّز الوحيدة القاتلة بالدارجة"}
+القواعد: specs من 5 إلى 8 عناصر (من الوصف أولاً ثم الصور، التقديري بعلامة ~)، sellingPoints بالضبط 5، painPoints بالضبط 3، hooks بالضبط 3. لا تكتب أي تعليق أو قوس خارج بنية JSON.`, 3000);
+    state.specs = { ...j, price, oldPrice:$('oldPriceIn').value.trim(), offer:$('offerIn').value.trim() };
+    $('specName').value=j.name||''; $('specDesc').value=j.description||''; $('specAud').value=j.audience||'';
+    $('specRows').innerHTML=''; (j.specs||[]).forEach(s=>addSpecRow(s.k,s.v));
+    state.tags = { hooks:(j.hooks||[]).slice(), sellingPoints:(j.sellingPoints||[]).slice(), painPoints:(j.painPoints||[]).slice() };
+    ['hooks','sellingPoints','painPoints'].forEach(renderTagBox);
+    $('specUsp').value=j.usp||'';
+    goStep(2); toast('تم التحليل ✅ راجع المواصفات');
+  }catch(e){ showErr('فشل تحليل المنتج: '+e.message); }
+  btn.disabled=false; btn.textContent='🧠 حلل واستخرج المواصفات ←';
+}
+function addSpecRow(k,v){
+  const d=document.createElement('div'); d.className='spec-row';
+  d.innerHTML=`<input value="${(k||'').replace(/"/g,'&quot;')}"><input value="${(v||'').replace(/"/g,'&quot;')}"><button onclick="this.parentNode.remove()">🗑️</button>`;
+  $('specRows').appendChild(d);
+}
+function collectSpecs(){
+  state.specs.name=$('specName').value; state.specs.description=$('specDesc').value; state.specs.audience=$('specAud').value;
+  state.specs.specs=[...$('specRows').children].map(r=>({k:r.children[0].value,v:r.children[1].value})).filter(s=>s.k);
+  state.specs.hooks=(state.tags.hooks||[]).slice();
+  state.specs.sellingPoints=(state.tags.sellingPoints||[]).slice();
+  state.specs.painPoints=(state.tags.painPoints||[]).slice();
+  state.specs.usp=$('specUsp').value.trim();
+}
+
+/* ============ 2→3: المخرج الفني — الدراسة + السلسلة ============ */
+async function genPlan(){
+  clearErr(); collectSpecs();
+  const btn=$('btnPlan'); btn.disabled=true; btn.innerHTML='<span class="spin">⏳</span> المخرج يدرس ويصمم السلسلة...';
+  const sp=state.specs;
+  try{
+    const CREATIVE =
+`${ELITE_PERSONA}
+
+وفوق هذا كامل، أنت تعرف المجتمع الجزائري بعمق: المستهلك الجزائري يشك في الشراء أونلاين ويحتاج إثبات، يحب "الصحة والقيمة مقابل السعر"، يتأثر برأي العائلة، الدفع عند الاستلام شرط ثقة، يحب المنتج الصلب "اللي يدوم"، ويتجاوب مع الدارجة الصادقة ماشي التقعير.
+${DARIJA_RULE}
+
+أسلوب AYOR: صور إعلانية عمودية (4:5) تُعرض متراصة فوق بعضها full-width في الهاتف، النص العربي مدموج داخل الصور كعنصر تصميم، والسلسلة تبان كتصميم واحد متواصل (أسفل كل صورة يكمل أعلى التي بعدها بنفس لون الخلفية hex).
+
+المنتج: ${sp.name} | ${sp.description}
+الهوية البصرية: ${sp.visualIdentity}
+السعر: ${sp.price} دج | القديم: ${sp.oldPrice||'-'} | العرض: ${sp.offer||'-'}
+الجمهور: ${sp.audience}
+نقاط البيع: ${(sp.sellingPoints||[]).join('، ')} | الآلام: ${(sp.painPoints||[]).join('، ')}
+الـUSP: ${sp.usp||'-'} | هوكات مقترحة: ${(sp.hooks||[]).join(' • ')}
+
+اشتغل بحرية كاملة، بلا JSON، كمخرج فني حقيقي يكتب تقريره الإبداعي:
+
+1) الدراسة العميقة: افحص الصور المرفقة بدقة بصرية (الخامة، التشطيب، ما يوحي بالجودة أو الضعف)، نقاط القوة المرئية الحقيقية، اعتراضات الجزائري وكيف نحيّدها بصرياً، المشكل الجوهري. ثم ولّد ثلاث زوايا تسويقية (Angles) متنافسة واختر الأقوى مع تبرير الاختيار.
+
+2) القرار الإخراجي: عدد الصور (4 أو 5 — أقل من 3 مرفوض نهائياً)، القصة النفسية المتدرجة عبر السلسلة، النظام البصري (لوحة ألوان hex مستخرجة من المنتج، إضاءة، مزاج).
+
+2.5) الانضباط النفسي (Miller's Law + Von Restorff): كل صورة تحمل حد أقصى عنصر جرافيكي مسيطر واحد (شارة، سهم، أو رقم كبير) — ممنوع تحميلها بعدة عناصر متزاحمة تشتت العين. اجعل في كل صورة عنصر واحد بارز يخطف النظر أولاً قبل أي شيء آخر.
+
+3) السلسلة — القاعدة الذهبية المطلقة: كل صورة تصميم إعلاني كامل مبني من الصفر. المنتج يُستخرج من الصورة المرفقة ويُعاد وضعه في مشهد جديد بالكامل: خلفية مصممة، بيئة، إضاءة سينمائية، عناصر جرافيكية (شارات، أسهم، price burst، callouts). "صورة المنتج الخام + نص فوقها" = عمل مرفوض يُلغى فوراً.
+نوّع التكوينات إجبارياً (ممنوع تكرار تكوين في صورتين): Hero Shot سينمائي / مشهد استعمال جزائري واقعي / Macro لتفصيلة تثبت الجودة / Split مشكل-حل أو قبل-بعد / Flat-lay علوي للعرض والملحقات / لوحة إثبات بأرقام كبيرة — أو ابتكر تكوينات أقوى.
+
+لكل صورة اكتب بوضوح: الغرض، الزناد النفسي، التكوين، وصف المشهد بالدارجة، النص العربي المدموج (قصير ضارب بالدارجة)، حافة الأعلى hex، حافة الأسفل hex (تطابق أعلى الصورة الموالية)، ثم البرومبت الإنجليزي الكامل (80-150 كلمة).
+
+هذا مثال للمستوى المطلوب في البرومبت (لمنتج افتراضي — لا تنسخه، تعلّم منه العمق السينمائي):
+"Using the attached product photo ONLY as the exact product reference (its design, colors and proportions must stay identical), design a completely new professional advertising composition: dramatic low-angle hero shot of the pressure washer standing on wet dark concrete in a moody Algerian garage at dusk, cinematic teal-orange grading, a frozen water jet with backlit crystal droplets, faint steam, shallow depth of field. Diagonal dynamic composition, rim light tracing the copper motor. Golden badge top-right reading '140 BAR', thin saffron callout arrows pointing to the motor and metal lance. Integrate this exact Arabic text as a bold graphic design element in modern Arabic typography (Cairo-style), perfectly legible, right-to-left: 'قوة تغسل كلش'. The background at the very top edge must be exactly #0B1D26 and at the very bottom edge exactly #123240. STRICT RULES: vertical 4:5, photorealistic product, full advertising design, no product deformation, no watermark, Arabic text spelled exactly as given."
+
+كل برومبت يبدأ بنفس الافتتاحية، يدمج النص العربي بنفس الصيغة، يحدد حافتي hex، وينتهي بنفس STRICT RULES.`;
+
+    const mkStruct = d =>
+`حوّل تقرير المخرج الفني التالي إلى JSON خام بالمخطط أدناه، بلا أي نص خارج JSON. انسخ كل برومبت حرفياً كاملاً كما هو، بلا اختصار ولا إعادة صياغة.
+=== التقرير ===
+${d}
+=== نهاية التقرير ===
+المخطط:
+{"study":{"strengths":["",""],"objections":["اعتراض → الرد بصرياً"],"coreProblem":"","angle":"الزاوية المختارة وعلاش"},
+"styleSystem":{"palette":["#hex","#hex","#hex","#hex"],"background":"english","lighting":"english","mood":""},
+"imageCount": 4,
+"reasoning":"",
+"images":[{"n":1,"purpose":"","trigger":"","composition":"","scene":"","arabicText":"","topEdge":"#hex","bottomEdge":"#hex","prompt":"البرومبت الحرفي الكامل"}]}
+القواعد: أدرج كل الصور الموجودة في التقرير (3 على الأقل)، حقل prompt منسوخ حرفياً بكامله.`;
+
+    toast('🎨 المخرج يفكر بحرية كاملة...');
+    let draft = await askBrain(state.productImages.slice(0,3), CREATIVE, 8000, 1.0, false);
+    state.plan = await askJSON([], mkStruct(draft), 7000, 0.2);
+    if(!Array.isArray(state.plan.images) || state.plan.images.length < 3){
+      toast('السلسلة ضعيفة — نرفضها ونعيد التوجيه بصرامة');
+      draft = await askBrain(state.productImages.slice(0,3),
+        CREATIVE + '\n\n⚠️ تنبيه صارم: محاولتك السابقة رُفضت (أقل من 3 صور أو مشاهد غير مصممة). المطلوب 4 إلى 5 تصاميم إعلانية كاملة بمشاهد جديدة ومتنوعة التكوين.', 8000, 1.0, false);
+      state.plan = await askJSON([], mkStruct(draft), 7000, 0.2);
+    }
+    if(!Array.isArray(state.plan.images) || !state.plan.images.length) throw new Error('المخرج ما رجعش سلسلة صالحة — عاود اضغط الزر');
+    state.slots = new Array((state.plan.images||[]).length).fill(null);
+    renderPlan();
+    goStep(3); toast('السلسلة جاهزة 🎬 '+state.plan.imageCount+' صور');
+  }catch(e){ showErr('فشل تصميم السلسلة: '+e.message); }
+  btn.disabled=false; btn.textContent='🎬 صمم السلسلة البصرية ←';
+}
+function toggleStudy(){
+  const w=$('studyWrap'); const open = w.style.display!=='none';
+  w.style.display = open?'none':'block';
+  $('btnToggleStudy').textContent = open? '📊 الدراسة والقرار الإخراجي' : '🔼 إخفاء الدراسة';
+}
+function renderPlan(){
+  const p=state.plan, st=p.study||{};
+  $('studyBox').innerHTML = `<b>🔬 الدراسة العميقة تاع المخرج:</b><br>
+<b>💪 نقاط القوة:</b> ${(st.strengths||[]).join(' • ')}<br>
+<b>🛡️ الاعتراضات والرد:</b> ${(st.objections||[]).join(' • ')}<br>
+<b>😩 المشكل الجوهري:</b> ${st.coreProblem||''}<br>
+<b>🎯 الزاوية:</b> ${st.angle||''}`;
+  $('planBox').innerHTML = `<b>🎬 قرار المخرج: ${p.imageCount} ${p.imageCount===1?'صورة':(p.imageCount===2?'صورتان':'صور')}</b><br>${p.reasoning||''}<br>
+<span>النظام البصري:</span> ${(p.styleSystem?.palette||[]).map(h=>`<span class="pal" style="background:${h}" title="${h}"></span>`).join('')} — ${p.styleSystem?.mood||''}`;
+
+  const palette = (p.styleSystem&&p.styleSystem.palette&&p.styleSystem.palette.length) ? p.styleSystem.palette : ['#0E6B4F','#E8A33D','#0A4A37','#C77F1B'];
+  $('promptCards').innerHTML = (p.images||[]).map((pi,i)=>{
+    const nodeColor = palette[i % palette.length];
+    return `<div class="tlitem">
+<div class="tlrail"><div class="tlnode" style="background:${nodeColor}">${pi.n}</div><div class="tlline"></div></div>
+<div class="tlcontent">
+<div class="tlhead"><strong>${pi.purpose}</strong><span class="pill">${pi.trigger||'-'}</span></div>
+<div class="tlmeta">🎬 التكوين: <b>${pi.composition||'-'}</b> — ${pi.scene||''}</div>
+<div class="tlmeta">النص المدموج: «${pi.arabicText}»</div>
+<div class="tledges"><span class="edge" style="background:${pi.topEdge}" title="أعلى ${pi.topEdge}"></span> → <span class="edge" style="background:${pi.bottomEdge}" title="أسفل ${pi.bottomEdge}"></span></div>
+<details class="tlprompt"><summary>📋 عرض البرومبت الكامل</summary><div class="txt">${pi.prompt}</div></details>
+<button class="btn-saff" onclick="copyPrompt(${i},this)">📋 نسخ البرومبت</button>
+</div>
+</div>`;
+  }).join('');
+  $('storyProgressTxt').textContent = `🎬 ${p.imageCount||(p.images||[]).length} صور في السلسلة — رتّبها بصريا حسب الأولوية النفسية من الأعلى للأسفل`;
+}
+function copyPrompt(i,btn){
+  const t=state.plan.images[i].prompt;
+  navigator.clipboard?.writeText(t).catch(()=>{});
+  const el=document.createElement('textarea'); el.value=t; document.body.appendChild(el); el.select();
+  try{document.execCommand('copy');}catch(e){} document.body.removeChild(el);
+  btn.textContent='✅'; setTimeout(()=>btn.textContent='📋 نسخ البرومبت',1500);
+  toast('البرومبت تنسخ 📋');
+}
+function copyAllPrompts(){
+  const imgs=(state.plan&&state.plan.images)||[];
+  if(!imgs.length){ toast('ما كاينش برومبتات باش تنسخ'); return; }
+  const txt = imgs.map(pi=>`=== صورة ${pi.n} — ${pi.purpose} ===\n${pi.prompt}`).join('\n\n');
+  navigator.clipboard?.writeText(txt).catch(()=>{});
+  const el=document.createElement('textarea'); el.value=txt; document.body.appendChild(el); el.select();
+  try{document.execCommand('copy');}catch(e){} document.body.removeChild(el);
+  toast('نسخينا كل البرومبتات دفعة وحدة 📋');
+}
+
+/* ============ 4→5: الفحص + التركيب ============ */
+async function directAndBuild(){
+  clearErr();
+  const imgs = state.slots.filter(Boolean).slice(0,6);
+  const useImgs = imgs.length ? imgs : state.productImages.slice(0,4);
+  if(!useImgs.length){ showErr('ارفع الصور أولاً'); return; }
+  const btn=$('btnBuild'); btn.disabled=true; btn.innerHTML='<span class="spin">⏳</span> يفحص التراص ويركب الصفحة...';
+  const sp=state.specs;
+  try{
+    const meta = useImgs.map((im,i)=>`[صورة ${i}]`).join(' ');
+    state.blueprint = await askJSON(useImgs,
+`${ELITE_PERSONA}
+
+${DARIJA_RULE}
+السياق: صفحة هبوط COD جزائرية أسلوب AYOR — الصور الإعلانية المتراصة full-width هي العمود الفقري، وتصميمك يحيط بها ويكملها.
+الخطة الأصلية: ${JSON.stringify((state.plan?.images||[]).map(p=>({n:p.n,purpose:p.purpose,arabicText:p.arabicText})))}
+الصور المرفوعة بالترتيب: ${meta}
+المنتج: ${sp.name} | ${sp.description}
+السعر: ${sp.price} دج (قديم: ${sp.oldPrice||'-'}) | العرض: ${sp.offer||'-'} | الجمهور: ${sp.audience}
+الـUSP: ${sp.usp||'-'} | نقاط البيع: ${(sp.sellingPoints||[]).join('، ')} | الآلام: ${(sp.painPoints||[]).join('، ')}
+
+مهامك السبع:
+1) افحص كل صورة بدقة: طابقها مع الخطة، قيّم تناسق الألوان والإضاءة والحواف بين كل صورتين متتاليتين، سلامة النص العربي، عدم تشوه المنتج. استبعد بلا تردد أي صورة فاشلة (لا تدرج فهرسها).
+2) رتب الصور بالترتيب الأمثل نفسياً وبصرياً (فهارس من 0).
+3) ابتكر مفهوم تصميم فريد 100% لهذا المنتج بالذات — كأنك وكالة بـ$50,000 تنافس على Awwwards Site of the Day. ممنوع أي تخطيط جاهز مكرر. designName بالإنجليزية، designRationale بالدارجة: علاش هذا المفهوم بالذات يبيع لهذا الجمهور بالذات.
+4) لوحة ألوان نفسية مستخرجة من صور المنتج: accentColor (يسيطر على CTA — Von Restorff، ويجب أن تكون نسبة تباينه مع خلفية شريط الطلب لا تقل عن 4.5:1 حتى تبقى العين تتوقف عنده بلا مجهود)، primaryColor (داكن للعناوين)، bgColor (خلفية الصفحة). وخطان من هذه القائمة فقط: Cairo, Tajawal, Almarai, Changa, El Messiri, Reem Kufi, Noto Kufi Arabic, Amiri, Lalezar — fontDisplay للعناوين وfontBody للنصوص، الاختيار نفسي (سلطة؟ دفء؟ حداثة؟).
+5) اكتب customCSS إبداعي كامل يطبق مفهومك: خلفيات طبقية، تدرجات ذكية، ظلال حديثة، فواصل أنيقة، بطاقات premium، micro-interactions بـCSS فقط (hover، transitions)، glassmorphism عند اللزوم، هرمية typography، whitespace كعنصر تصميم. تقدر تعيد تصميم: section، h2، .review، details/summary، .trust3، .urgency، .price-new، .cta (ألوان/ظلال/حواف/تدرجات)، footer، وتزيد classes جديدة لأقسامك. قواعد صارمة: بلا @import، بلا url() خارجي، بلا position:fixed، بلا display:none لعناصر موجودة، لا تلمس آلية عمل .sheet و.ctabar و.stack img (جمّلهم فقط).
+6) ثلاثة أقسام HTML semantic نظيفة بالدارجة (بلا script، بلا صور أو روابط خارجية، أيقونات inline SVG فقط): aboveImages = شريط hook قصير فوق الصور يوقف السكرول (اختياري — أرجعه "" إذا الصور كافية بذاتها)، belowImages = القسم الإبداعي الرئيسي بعد شريط الثقة (فوائد بأيقونات، أرقام، مقارنة قبل/بعد — إبداعك)، preFooter = قسم طمأنة/ضمان أخير قبل الفوتر (Peak-End Rule).
+7) الكوبي: cta قصير ضارب، urgency واقعي غير مبتذل، 3 testimonials بتفاصيل ملموسة تبني الثقة، 4 faq تذيب الاعتراضات (توصيل، دفع عند الاستلام، ضمان).
+
+أجب فقط بـ JSON خام:
+{"imageOrder":[0,1],"designName":"English name","designRationale":"بالدارجة",
+"accentColor":"#hex","primaryColor":"#hex","bgColor":"#hex","fontDisplay":"Cairo","fontBody":"Tajawal",
+"customCSS":"css كامل بلا وسوم style",
+"sections":{"aboveImages":"<section>...</section> أو نص فارغ","belowImages":"<section>...</section>","preFooter":"<section>...</section>"},
+"continuityCheck":"جملتان بالدارجة: تقييم التراص + المستبعد وعلاش","strategy":"جملتان بالدارجة: منطق الترتيب",
+"copy":{"cta":"","urgency":"","testimonials":[{"name":"اسم جزائري","wilaya":"ولاية","text":"بالدارجة بتفصيل ملموس"}],"faq":[{"q":"بالدارجة","a":"بالدارجة"}]}}
+القواعد: testimonials بالضبط 3، faq بالضبط 4، customCSS نص JSON واحد مهرّب بشكل سليم، لا تعليقات ولا أقواس خارج بنية JSON.`, 8000, 0.9);
+    state.finalHTML = buildLandingHTML(sp, state.blueprint, useImgs, $('pixelIn').value.trim());
+    $('checkBox').innerHTML = `<b>🎨 المفهوم:</b> ${state.blueprint.designName||''} — ${state.blueprint.designRationale||''}<br><b>🧠 فحص التراص:</b> ${state.blueprint.continuityCheck||''}<br><b>📐 الاستراتيجية:</b> ${state.blueprint.strategy||''}`;
+    $('preview').srcdoc = state.finalHTML;
+    goStep(5); toast('الصفحة جاهزة ✅');
+  }catch(e){ showErr('فشل الإخراج: '+e.message); }
+  btn.disabled=false; btn.textContent='🎬 افحص التناسق وابنِ الصفحة';
+}
+
+function downloadPage(){
+  const blob=new Blob([state.finalHTML],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='landing-'+(state.specs?.name||'page').replace(/\s+/g,'-')+'.html';
+  a.click();
+  toast('تحمّل الملف ⬇️');
+}
+function copyHTML(btn){
+  navigator.clipboard?.writeText(state.finalHTML).then(()=>{
+    btn.textContent='✅ تنسخ!'; setTimeout(()=>btn.textContent='📋 انسخ الكود',1800);
+    toast('الكود تنسخ كامل 📋');
+  }).catch(()=>{
+    const el=document.createElement('textarea'); el.value=state.finalHTML; document.body.appendChild(el); el.select();
+    try{document.execCommand('copy'); toast('الكود تنسخ 📋');}catch(e){showErr('فشل النسخ — استعمل التحميل');}
+    document.body.removeChild(el);
+  });
+}
+
+/* ============ المصمم النخبوي: هيكل تحويل ثابت + تصميم حي فريد ============ */
+function sanitizeHTML(h){
+  return (h||'')
+    .replace(/<script[\s\S]*?<\/script>/gi,'')
+    .replace(/\son[a-z]+\s*=\s*"[^"]*"/gi,'')
+    .replace(/\son[a-z]+\s*=\s*'[^']*'/gi,'')
+    .replace(/javascript:/gi,'');
+}
+function sanitizeCSS(c){
+  return (c||'')
+    .replace(/<\/?style[^>]*>/gi,'')
+    .replace(/@import[^;]*;?/gi,'')
+    .replace(/url\s*\(\s*['"]?https?:[^)]*\)/gi,'none')
+    .replace(/position\s*:\s*fixed/gi,'position:relative')
+    .replace(/display\s*:\s*none/gi,'opacity:1');
+}
+function buildLandingHTML(specs, bp, allImages, pixelId){
+  const c = bp.copy||{};
+  const accent = bp.accentColor||'#C0392B';
+  const primary = bp.primaryColor||'#111';
+  const bg = bp.bgColor||'#ffffff';
+  const FONTS = ['Cairo','Tajawal','Almarai','Changa','El Messiri','Reem Kufi','Noto Kufi Arabic','Amiri','Lalezar'];
+  const fD = FONTS.includes(bp.fontDisplay)?bp.fontDisplay:'Cairo';
+  const fB = FONTS.includes(bp.fontBody)?bp.fontBody:'Tajawal';
+  const gfams = [...new Set([fD,fB])].map(f=>'family='+f.replace(/ /g,'+')+':wght@400;500;700;800;900').join('&');
+  const customCSS = sanitizeCSS(bp.customCSS);
+  const secAbove = sanitizeHTML(bp.sections&&bp.sections.aboveImages);
+  const secBelow = sanitizeHTML(bp.sections&&bp.sections.belowImages);
+  const secPre = sanitizeHTML(bp.sections&&bp.sections.preFooter);
+  const orderIdx = (bp.imageOrder||allImages.map((_,i)=>i)).filter(i=>allImages[i]);
+  const stacked = orderIdx.map(i=>`<img src="${allImages[i].dataUrl}" alt="${specs.name}" loading="lazy">`).join('\n');
+  const wilayaOptions = WILAYAS.map(w=>`<option value="${w}">${w}</option>`).join('');
+  const reviews = (c.testimonials||[]).map(t=>`<div class="review"><div class="stars">★★★★★</div><p>"${t.text}"</p><span>— ${t.name}، ${t.wilaya} <b class="v">✓ طلب مؤكد</b></span></div>`).join('');
+  const faqItems = (c.faq||[]).map(f=>`<details><summary>${f.q}</summary><p>${f.a}</p></details>`).join('');
+  const px = pixelId ? `
+<scr`+`ipt>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','${pixelId}');fbq('track','PageView');
+setTimeout(function(){fbq('track','ViewContent',{content_name:'${specs.name}',value:${specs.price||0},currency:'DZD'});},3000);
+var s50=false;window.addEventListener('scroll',function(){
+if(!s50&&window.scrollY>document.body.scrollHeight*0.4){s50=true;fbq('trackCustom','Scroll50');}});
+</scr`+`ipt>` : '';
+
+  return `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${specs.name}</title>
+<!-- Design concept: ${(bp.designName||'').replace(/-->/g,'')} -->${px}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?${gfams}&display=swap" rel="stylesheet">
+<style>
+/* ===== الهيكل الأساسي ===== */
+:root{--accent:${accent};--primary:${primary};--bg:${bg}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'${fB}',Tahoma,sans-serif;background:var(--bg);color:#222;line-height:1.7}
+h1,h2,.cta,.price-new{font-family:'${fD}',Tahoma,sans-serif}
+.page{max-width:520px;margin:0 auto;background:#fff;box-shadow:0 0 30px rgba(0,0,0,.08)}
+.stack img{width:100%;display:block;margin:0;padding:0;border:0}
+.ctabar{position:fixed;bottom:0;right:0;left:0;max-width:520px;margin:0 auto;background:#fff;display:flex;gap:10px;align-items:center;padding:10px 14px;box-shadow:0 -4px 20px rgba(0,0,0,.15);z-index:90}
+.ctabar .p{flex:1}
+.price-new{font-size:1.35rem;font-weight:900;color:var(--accent)}
+.price-old{text-decoration:line-through;color:#999;font-size:.85rem;margin-right:6px}
+.cta{background:var(--accent);color:#fff;border:none;border-radius:12px;padding:13px 22px;font-size:1.05rem;font-weight:800;cursor:pointer;animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+section{padding:26px 16px}
+h2{color:var(--primary);font-size:1.2rem;margin-bottom:14px;font-weight:800}
+.review{background:#faf9f6;border:1px solid #eee;border-radius:12px;padding:12px;margin-bottom:10px}
+.stars{color:#E8A33D}
+.review span{color:#777;font-size:.82rem}
+.v{color:#0E6B4F;font-size:.75rem}
+details{background:#faf9f6;border:1px solid #eee;border-radius:12px;padding:12px;margin-bottom:8px}
+summary{font-weight:700;cursor:pointer;color:var(--primary)}
+details p{padding-top:8px;color:#444}
+.trust3{display:flex;gap:8px;text-align:center;padding:14px 16px;background:var(--primary);color:#fff}
+.trust3>div{flex:1;font-size:.78rem;font-weight:700}
+footer{text-align:center;color:#999;font-size:.78rem;padding:24px 0 110px}
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:.25s;z-index:95}
+.sheet{position:fixed;bottom:0;right:0;left:0;max-width:520px;margin:0 auto;background:#fff;border-radius:22px 22px 0 0;padding:18px 16px 24px;transform:translateY(105%);transition:.3s cubic-bezier(.2,.9,.3,1);z-index:96;max-height:88vh;overflow:auto}
+body.open .sheet{transform:translateY(0)}
+body.open .sheet-bg{opacity:1;pointer-events:auto}
+.grip{width:44px;height:5px;background:#ddd;border-radius:3px;margin:0 auto 12px}
+.sheet h2{text-align:center}
+.urgency{text-align:center;background:#FFF3E0;color:#C77F1B;font-weight:700;padding:8px;border-radius:10px;margin:10px 0;font-size:.9rem}
+label{display:block;font-weight:700;margin:10px 0 4px;font-size:.92rem}
+input,select{width:100%;padding:13px;border:1.5px solid #ccc;border-radius:10px;font-size:1rem;background:#fff;color:#222;font-family:'${fB}'}
+input:focus,select:focus{border-color:var(--accent);outline:none}
+.submit{display:block;width:100%;margin-top:14px}
+.success{display:none;text-align:center;background:#E8F5EF;color:#0A4A37;font-weight:700;padding:14px;border-radius:10px;margin-top:12px}
+.safe{text-align:center;color:#888;font-size:.78rem;margin-top:10px}
+</style>
+<style>
+/* ===== تصميم المخرج النخبوي (فريد لكل منتج) ===== */
+${customCSS}
+</style>
+<style>
+/* ===== حارس البنية: يضمن عمل آلة التحويل مهما كان التصميم ===== */
+.stack img{width:100%!important;display:block!important}
+.ctabar{position:fixed!important;bottom:0!important;right:0!important;left:0!important;z-index:90!important;display:flex!important}
+.sheet{position:fixed!important;bottom:0!important;right:0!important;left:0!important;z-index:96!important}
+.sheet-bg{position:fixed!important;inset:0!important;z-index:95!important}
+body:not(.open) .sheet{transform:translateY(105%)!important}
+body.open .sheet{transform:translateY(0)!important}
+body.open .sheet-bg{opacity:1!important;pointer-events:auto!important}
+.success{display:none}
+</style>
+</head>
+<body>
+<div class="page">
+${secAbove}
+<div class="stack">
+${stacked}
+</div>
+<div class="trust3"><div>💵 الدفع عند الاستلام</div><div>🚚 التوصيل 58 ولاية</div><div>✅ ضمان الجودة</div></div>
+${secBelow}
+<section><h2>آراء زبائننا</h2>${reviews}</section>
+<section><h2>أسئلة شائعة</h2>${faqItems}</section>
+${secPre}
+<footer>جميع الحقوق محفوظة © ${new Date().getFullYear()}</footer>
+</div>
+<div class="ctabar">
+<div class="p"><span class="price-new">${specs.price} دج</span>${specs.oldPrice?`<span class="price-old">${specs.oldPrice} دج</span>`:''}</div>
+<button class="cta" onclick="openSheet()">${c.cta||'اطلب درك'}</button>
+</div>
+<div class="sheet-bg" onclick="closeSheet()"></div>
+<div class="sheet">
+<div class="grip"></div>
+<h2>📦 عمّر الطلبية</h2>
+<div class="urgency">${c.urgency||'🔥 الكمية محدودة'}</div>
+<form onsubmit="return submitOrder(event)">
+<label>الاسم الكامل *</label><input name="name" required placeholder="اكتب اسمك">
+<label>رقم الهاتف *</label><input name="phone" type="tel" required placeholder="05 / 06 / 07 ..." pattern="0[5-7][0-9]{8}">
+<label>الولاية *</label><select name="wilaya" required><option value="">— اختر الولاية —</option>${wilayaOptions}</select>
+<label>البلدية / العنوان *</label><input name="commune" required placeholder="البلدية أو العنوان">
+<label>الكمية</label><select name="qty"><option>1</option><option>2</option><option>3</option></select>
+<button class="cta submit" type="submit">✅ أكد الطلب — ${specs.price} دج</button>
+<div class="success" id="okmsg">✅ وصلنا طلبك! نعيطولك قريب للتأكيد.</div>
+<p class="safe">🔒 معلوماتك في أمان — نعيطولك غير للتأكيد</p>
+</form>
+</div>
+<scr`+`ipt>
+function openSheet(){document.body.classList.add('open');${pixelId?"fbq('track','InitiateCheckout');":''}}
+function closeSheet(){document.body.classList.remove('open')}
+function submitOrder(e){e.preventDefault();${pixelId?`fbq('track','Lead',{content_name:'${specs.name}',value:${specs.price||0},currency:'DZD'});`:''}
+document.getElementById('okmsg').style.display='block';e.target.querySelector('button[type=submit]').disabled=true;
+/* TODO: إرسال الطلب لـ WooCommerce / Google Sheets */
+return false;}
+</scr`+`ipt>
+</body></html>`;
+}
+</script>
+</body>
+</html>
